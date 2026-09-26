@@ -1,0 +1,16 @@
+# SavedVariables and cache files
+*.lua.bak
+*.bak
+*.tmp
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDE directories
+.vscode/
+.idea/
+
+# Distribution zip files
+release/
+*.zip

@@ -1,0 +1,9 @@
+## Interface: 110007, 110100, 11504, 40402
+## Title: |cff00e5ffAuraUI|r [|cff00ff00Options|r]
+## Notes: Dynamic configuration panel and Edit Mode controls for AuraUI.
+## Author: YourName
+## Version: 1.0.0
+## Dependencies: AuraUI
+## LoadOnDemand: 1
+
+OptionsPanel.lua

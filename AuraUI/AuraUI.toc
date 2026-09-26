@@ -1,0 +1,43 @@
+## Interface: 110007, 110100, 11504, 40402
+## Title: |cff00e5ffAuraUI|r
+## Notes: High-performance, modular WoW UI suite inspired by EllesmereUI.
+## Author: YourName
+## Version: 1.0.0
+## SavedVariables: AuraUIDB
+## SavedVariablesPerCharacter: AuraUICharDB
+## IconTexture: Interface\Icons\Spell_Holy_MindVision
+
+# Initialization & Core Engine
+Init.lua
+Engine\Media.lua
+Engine\Profiles.lua
+Engine\EditMode.lua
+Config.lua
+Core.lua
+
+# Templates
+Templates\Frames.xml
+
+# Complete Module Suite
+Modules\ActionBars.lua
+Modules\UnitFrames.lua
+Modules\Nameplates.lua
+Modules\RaidFrames.lua
+Modules\Cooldowns.lua
+Modules\ResourceBars.lua
+Modules\BuffReminders.lua
+Modules\Skinning.lua
+Modules\CursorEffects.lua
+Modules\QualityOfLife.lua
+Modules\MythicPlus.lua
+Modules\SkyridingHUD.lua
+Modules\Minimap.lua
+Modules\FriendsList.lua
+Modules\Chat.lua
+Modules\QuestTracker.lua
+Modules\DamageMeter.lua
+Modules\Bags.lua
+Modules\DataBars.lua
+Modules\PartyMode.lua
+Modules\UIUtilities.lua
+Modules\TestRunner.lua
