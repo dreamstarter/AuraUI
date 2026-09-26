@@ -52,7 +52,7 @@ for file_name in os.listdir(modules_dir):
                 check(False, f"No module registration found in {file_name}")
 
 print("\n3. Verifying Core Engines...")
-engines = ["Range.lua", "Kick.lua", "Glows.lua", "ProfileSharing.lua", "FirstInstall.lua", "Visibility.lua", "Profiles.lua", "EditMode.lua", "Media.lua"]
+engines = ["Range.lua", "Kick.lua", "Glows.lua", "ProfileSharing.lua", "FirstInstall.lua", "Visibility.lua", "ThemePresets.lua", "Profiles.lua", "EditMode.lua", "Media.lua"]
 for eng in engines:
     eng_path = os.path.join("AuraUI/Engine", eng)
     check(os.path.exists(eng_path), f"Core Engine presence: {eng}")
