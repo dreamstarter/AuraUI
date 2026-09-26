@@ -1,6 +1,6 @@
 ## Interface: 110007, 110100, 11504, 40402
 ## Title: |cff00e5ffAuraUI|r
-## Notes: High-performance, modular WoW UI suite inspired by EllesmereUI.
+## Notes: High-performance, modular WoW UI suite tailored for WoW: Forever.
 ## Author: YourName
 ## Version: 1.0.0
 ## SavedVariables: AuraUIDB
@@ -49,4 +49,6 @@ Modules\UIUtilities.lua
 Modules\ClickCasting.lua
 Modules\ManaSpark.lua
 Modules\MacroFactory.lua
+Modules\ForeverEssentials.lua
+Modules\ForeverClassBars.lua
 Modules\TestRunner.lua
