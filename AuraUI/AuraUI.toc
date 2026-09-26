@@ -1,7 +1,7 @@
 ## Interface: 110007, 110100, 11504, 40402
 ## Title: |cff00e5ffAuraUI|r
-## Notes: High-performance, modular WoW UI suite.
-## Author: Bryan Anderson
+## Notes: High-performance, modular WoW UI suite inspired by EllesmereUI.
+## Author: YourName
 ## Version: 1.0.0
 ## SavedVariables: AuraUIDB
 ## SavedVariablesPerCharacter: AuraUICharDB
@@ -16,6 +16,8 @@ Engine\Range.lua
 Engine\Kick.lua
 Engine\Glows.lua
 Engine\ProfileSharing.lua
+Engine\FirstInstall.lua
+Engine\Visibility.lua
 Config.lua
 Core.lua
 
@@ -45,4 +47,6 @@ Modules\DataBars.lua
 Modules\PartyMode.lua
 Modules\UIUtilities.lua
 Modules\ClickCasting.lua
+Modules\ManaSpark.lua
+Modules\MacroFactory.lua
 Modules\TestRunner.lua

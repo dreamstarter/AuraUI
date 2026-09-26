@@ -3,7 +3,6 @@ import os
 import re
 import sys
 
-# Ensure UTF-8 output encoding for Windows terminal compatibility
 if sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
@@ -52,8 +51,8 @@ for file_name in os.listdir(modules_dir):
             else:
                 check(False, f"No module registration found in {file_name}")
 
-print("\n3. Verifying Core Engines (Range, Kick, Glows, Profiles, Sharing, EditMode)...")
-engines = ["Range.lua", "Kick.lua", "Glows.lua", "ProfileSharing.lua", "Profiles.lua", "EditMode.lua", "Media.lua"]
+print("\n3. Verifying Core Engines...")
+engines = ["Range.lua", "Kick.lua", "Glows.lua", "ProfileSharing.lua", "FirstInstall.lua", "Visibility.lua", "Profiles.lua", "EditMode.lua", "Media.lua"]
 for eng in engines:
     eng_path = os.path.join("AuraUI/Engine", eng)
     check(os.path.exists(eng_path), f"Core Engine presence: {eng}")
