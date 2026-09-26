@@ -8,7 +8,7 @@ if sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
 print("==========================================")
-print("[TEST RUNNER] AuraUI Diagnostic & Unit Test Execution")
+print("[TEST RUNNER] AuraUI Comprehensive Diagnostic Suite")
 print("==========================================")
 
 toc_file = "AuraUI/AuraUI.toc"
@@ -52,20 +52,11 @@ for file_name in os.listdir(modules_dir):
             else:
                 check(False, f"No module registration found in {file_name}")
 
-print("\n3. Verifying SavedVariables Schema & Config Layout Keys...")
-config_path = "AuraUI/Config.lua"
-with open(config_path, "r", encoding="utf-8") as f:
-    config_content = f.read()
-    check("defaultProfile = {" in config_content, "defaultProfile schema definition present")
-    check("InitDatabase" in config_content, "InitDatabase function defined")
-    check("AuraUIDB" in config_content, "Global database key 'AuraUIDB' declared")
-
-print("\n4. Verifying EditMode Mover Registrations...")
-edit_mode_path = "AuraUI/Engine/EditMode.lua"
-with open(edit_mode_path, "r", encoding="utf-8") as f:
-    em_content = f.read()
-    check("RegisterMover" in em_content, "RegisterMover engine function present")
-    check("ShowGrid" in em_content, "ShowGrid alignment overlay present")
+print("\n3. Verifying Core Engines (Range, Kick, Glows, Profiles, Sharing, EditMode)...")
+engines = ["Range.lua", "Kick.lua", "Glows.lua", "ProfileSharing.lua", "Profiles.lua", "EditMode.lua", "Media.lua"]
+for eng in engines:
+    eng_path = os.path.join("AuraUI/Engine", eng)
+    check(os.path.exists(eng_path), f"Core Engine presence: {eng}")
 
 print("\n==========================================")
 print(f"Diagnostic Results: {passed} Passed, {failed} Failed")

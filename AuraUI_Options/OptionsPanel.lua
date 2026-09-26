@@ -1,4 +1,4 @@
--- OptionsPanel.lua: Custom Options Window styled after EllesmereUI
+-- OptionsPanel.lua: Custom Options Window
 local addonName = "AuraUI"
 local addonTable = _G[addonName]
 if not addonTable then return end

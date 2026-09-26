@@ -1,6 +1,6 @@
 # AuraUI - High-Performance World of Warcraft AddOn Suite
 
-**AuraUI** is a lightweight, high-performance UI suite for World of Warcraft inspired by EllesmereUI, featuring 21 fully integrated modular systems, an interactive Edit Mode alignment grid, automatic spec-based profile switching, and an automated dual-runner test suite.
+**AuraUI** is a lightweight, high-performance UI suite for World of Warcraft:Forever, featuring 21 fully integrated modular systems, an interactive Edit Mode alignment grid, automatic spec-based profile switching, and an automated dual-runner test suite.
 
 ---
 
