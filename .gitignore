@@ -11,6 +11,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Internal project documentation & scratch notes (untracked)
+project_docs/
+
 # Distribution zip files
 release/
 *.zip
