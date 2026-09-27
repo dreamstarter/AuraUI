@@ -22,6 +22,7 @@ Engine\ThemePresets.lua
 Engine\SoundAlerts.lua
 Engine\SpellQueue.lua
 Engine\ProcEffects.lua
+Engine\SoundPackCustomizer.lua
 Config.lua
 Core.lua
 
@@ -63,5 +64,7 @@ Modules\DebuffTracker.lua
 Modules\LootAnnounce.lua
 Modules\MapNotes.lua
 Modules\GuildNotes.lua
+Modules\AutoMarker.lua
+Modules\LootCouncil.lua
 Modules\TestRunner.lua
 

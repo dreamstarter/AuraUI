@@ -44,6 +44,8 @@ addonTable.defaultProfile = {
         LootAnnounce     = { point = "CENTER", relPoint = "CENTER", x = 300, y = 0 },
         MapNotes         = { point = "CENTER", relPoint = "CENTER", x = 100, y = 0 },
         GuildNotes       = { point = "CENTER", relPoint = "CENTER", x = -100, y = 0 },
+        AutoMarker       = { point = "CENTER", relPoint = "CENTER", x = 0, y = -260 },
+        LootCouncil      = { point = "CENTER", relPoint = "CENTER", x = 0, y = 50 },
     },
     actionBars = {
         buttonScale = 1.0,
@@ -202,6 +204,16 @@ addonTable.defaultProfile = {
     },
     guildNotes = {
         enabled = true,
+    },
+    autoMarker = {
+        enabled = true,
+        autoMark = true,
+    },
+    lootCouncil = {
+        enabled = true,
+    },
+    soundPackCustomizer = {
+        activePack = "Classic",
     },
     style = "Flat",
 }

@@ -238,6 +238,26 @@ local cbGuildNotes = CreateSettingCheckbox(mainContent, cbMapNotes, 0, -8, "Enab
         if isChecked then mod:OnEnable() else mod:OnDisable() end
     end
 end)
+local cbAutoMarker = CreateSettingCheckbox(mainContent, cbGuildNotes, 0, -8, "Enable Smart Priority Raid Auto-Marker (/aui mark)", true, function(self)
+    local isChecked = self:GetChecked()
+    local mod = addonTable:GetModule("AutoMarker")
+    if mod then
+        if isChecked then mod:OnEnable() else mod:OnDisable() end
+    end
+end)
+local cbLootCouncil = CreateSettingCheckbox(mainContent, cbAutoMarker, 0, -8, "Enable Raid Loot Council Voting Panel (/aui lc)", true, function(self)
+    local isChecked = self:GetChecked()
+    local mod = addonTable:GetModule("LootCouncil")
+    if mod then
+        if isChecked then mod:OnEnable() else mod:OnDisable() end
+    end
+end)
+local cbSoundPacks = CreateSettingCheckbox(mainContent, cbLootCouncil, 0, -8, "Enable Sound Pack Customizer Profiles", true, function(self)
+    local isChecked = self:GetChecked()
+    if addonTable.engine.SoundPackCustomizer then
+        addonTable.engine.SoundPackCustomizer:SetPack(isChecked and "Classic" or "Mute")
+    end
+end)
 
 -- 6. Bottom Footer Controls Bar
 local footerBar = CreateFrame("Frame", nil, optionsFrame, "BackdropTemplate")
