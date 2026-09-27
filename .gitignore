@@ -15,5 +15,6 @@ Thumbs.db
 project_docs/
 
 # Distribution zip files
+dist/
 release/
 *.zip
