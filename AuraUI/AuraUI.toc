@@ -19,6 +19,7 @@ Engine\ProfileSharing.lua
 Engine\FirstInstall.lua
 Engine\Visibility.lua
 Engine\ThemePresets.lua
+Engine\SoundAlerts.lua
 Config.lua
 Core.lua
 
@@ -53,4 +54,7 @@ Modules\MacroFactory.lua
 Modules\ForeverEssentials.lua
 Modules\ForeverClassBars.lua
 Modules\ForeverDungeonTools.lua
+Modules\ChatFilter.lua
+Modules\RetailBridge.lua
 Modules\TestRunner.lua
+
