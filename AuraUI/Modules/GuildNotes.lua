@@ -1,0 +1,271 @@
+-------------------------------------------------------------------------------
+-- AuraUI / Modules / GuildNotes.lua
+-- Enhanced Guild Roster Integration with Inline Public & Officer Notes
+-- Adheres to auraui-design-system and wow-forever-compat guidelines.
+-------------------------------------------------------------------------------
+
+local addonName, addonTable = ...
+local GuildNotes = addonTable:NewModule("GuildNotes")
+
+-------------------------------------------------------------------------------
+-- Module State & Constants
+-------------------------------------------------------------------------------
+GuildNotes.enabled = true
+GuildNotes.frame   = nil
+
+local WINDOW_WIDTH  = 540
+local WINDOW_HEIGHT = 440
+local ROW_HEIGHT    = 22
+
+-------------------------------------------------------------------------------
+-- UI Construction (Dark Glass Window)
+-------------------------------------------------------------------------------
+local function CreateGuildNotesWindow()
+    local f = CreateFrame("Frame", "AuraUIGuildNotesFrame", UIParent, "BackdropTemplate")
+    f:SetSize(WINDOW_WIDTH, WINDOW_HEIGHT)
+    f:SetPoint("CENTER", UIParent, "CENTER", -100, 0)
+    f:SetClampedToScreen(true)
+    f:SetMovable(true)
+    f:EnableMouse(true)
+    f:RegisterForDrag("LeftButton")
+    f:SetScript("OnDragStart", f.StartMoving)
+    f:SetScript("OnDragStop",  f.StopMovingOrSizing)
+    f:Hide()
+
+    -- Dark Glass Styling
+    if f.SetBackdrop then
+        f:SetBackdrop({
+            bgFile   = "Interface\\Buttons\\WHITE8X8",
+            edgeFile = "Interface\\Buttons\\WHITE8X8",
+            edgeSize = 1,
+        })
+        f:SetBackdropColor(0.08, 0.09, 0.11, 0.96)
+        f:SetBackdropBorderColor(0, 0.9, 1, 0.6)
+    end
+
+    -- Title Bar
+    local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    title:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -8)
+    title:SetText("|cff00e5ffGuild Roster & Officer Notes|r")
+    f.title = title
+
+    -- Close Button
+    local closeBtn = CreateFrame("Button", nil, f, "UIPanelCloseButton")
+    closeBtn:SetPoint("TOPRIGHT", f, "TOPRIGHT", -4, -4)
+    closeBtn:SetScript("OnClick", function() f:Hide() end)
+
+    -- Refresh Button
+    local refreshBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+    refreshBtn:SetSize(80, 22)
+    refreshBtn:SetPoint("TOPRIGHT", closeBtn, "TOPLEFT", -4, -4)
+    refreshBtn:SetText("Refresh")
+    refreshBtn:SetScript("OnClick", function()
+        if GuildRoster then GuildRoster() end
+        GuildNotes:RefreshRoster()
+    end)
+
+    -- Search Box
+    local searchBox = CreateFrame("EditBox", nil, f, "InputBoxTemplate")
+    searchBox:SetSize(160, 20)
+    searchBox:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 4, -8)
+    searchBox:SetAutoFocus(false)
+    searchBox:SetText("")
+    searchBox:SetScript("OnTextChanged", function(self)
+        GuildNotes:RefreshRoster(self:GetText():lower():trim())
+    end)
+    f.searchBox = searchBox
+
+    local searchLabel = f:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    searchLabel:SetPoint("LEFT", searchBox, "RIGHT", 8, 0)
+    searchLabel:SetText("Filter by name/note")
+
+    -- Scroll Frame
+    local scroll = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", 10, -64)
+    scroll:SetPoint("BOTTOMRIGHT", -28, 10)
+    f.scroll = scroll
+
+    local content = CreateFrame("Frame", nil, scroll)
+    content:SetSize(WINDOW_WIDTH - 38, 1)
+    scroll:SetScrollChild(content)
+    f.content = content
+
+    return f
+end
+
+-------------------------------------------------------------------------------
+-- Roster Refresh & Rendering
+-------------------------------------------------------------------------------
+function GuildNotes:RefreshRoster(filter)
+    if not IsInGuild() then
+        if self.frame and self.frame:IsShown() then
+            addonTable:Print("You are not currently in a guild.")
+        end
+        return
+    end
+
+    local content = self.frame.content
+    for _, child in pairs({ content:GetChildren() }) do
+        child:Hide()
+        child:SetParent(nil)
+    end
+
+    local numMembers = GetNumGuildMembers()
+    local matching = {}
+
+    for i = 1, numMembers do
+        local name, rank, rankIndex, level, class, zone, note, officerNote, online, status, classFileName = GetGuildRosterInfo(i)
+        if name then
+            local cleanName = name:match("^(.-)%-") or name
+            local matches = true
+
+            if filter and filter ~= "" then
+                local searchPool = string.lower(table.concat({ cleanName, note or "", officerNote or "", rank or "", class or "" }, " "))
+                if not searchPool:find(filter, 1, true) then
+                    matches = false
+                end
+            end
+
+            if matches then
+                table.insert(matching, {
+                    name = cleanName,
+                    rank = rank or "Member",
+                    level = level or "?",
+                    class = class or "Unknown",
+                    classFile = classFileName or "WARRIOR",
+                    note = note or "",
+                    officerNote = officerNote or "",
+                    online = online,
+                })
+            end
+        end
+    end
+
+    content:SetHeight(math.max(1, #matching * ROW_HEIGHT + 4))
+
+    for i, member in ipairs(matching) do
+        local row = CreateFrame("Frame", nil, content)
+        row:SetSize(WINDOW_WIDTH - 42, ROW_HEIGHT)
+        row:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -(i - 1) * ROW_HEIGHT)
+
+        -- Shading
+        if i % 2 == 0 then
+            local shade = row:CreateTexture(nil, "BACKGROUND")
+            shade:SetAllPoints()
+            shade:SetColorTexture(1, 1, 1, 0.03)
+        end
+
+        -- Class color
+        local classCol = RAID_CLASS_COLORS[member.classFile] or { r = 1, g = 1, b = 1 }
+        local nameText = string.format("|cff%02x%02x%02x%s|r", classCol.r * 255, classCol.g * 255, classCol.b * 255, member.name)
+        local statusText = member.online and "|cff00e676●|r" or "|cff757575○|r"
+
+        -- Notes Display (Officer Note in Cyan if present)
+        local noteDisplay = ""
+        if member.officerNote ~= "" then
+            noteDisplay = string.format("|cff00e5ff[ON: %s]|r ", member.officerNote)
+        end
+        if member.note ~= "" then
+            noteDisplay = noteDisplay .. string.format("|cffffffff%s|r", member.note)
+        end
+        if noteDisplay == "" then
+            noteDisplay = "|cff666666(no notes)|r"
+        end
+
+        local text = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        text:SetPoint("LEFT", row, "LEFT", 4, 0)
+        text:SetPoint("RIGHT", row, "RIGHT", -4, 0)
+        text:SetJustifyH("LEFT")
+        text:SetText(string.format("%s %s (%s - %s) - %s", statusText, nameText, member.level, member.rank, noteDisplay))
+    end
+end
+
+-------------------------------------------------------------------------------
+-- Slash Command & Lookup
+-------------------------------------------------------------------------------
+local function HandleSlash(msg)
+    local cmd, targetName = msg:match("^(%S*)%s*(.-)$")
+    cmd = cmd and cmd:lower() or ""
+
+    if cmd == "guild" then
+        if not IsInGuild() then
+            addonTable:Print("You are not in a guild.")
+            return
+        end
+
+        if targetName and targetName ~= "" then
+            -- Lookup specific member
+            targetName = targetName:lower():trim()
+            local numMembers = GetNumGuildMembers()
+            local found = false
+
+            for i = 1, numMembers do
+                local name, rank, _, level, class, _, note, officerNote, online, _, classFileName = GetGuildRosterInfo(i)
+                local cleanName = name and (name:match("^(.-)%-") or name) or ""
+                if cleanName:lower() == targetName then
+                    found = true
+                    local classCol = RAID_CLASS_COLORS[classFileName] or { r = 1, g = 1, b = 1 }
+                    addonTable:Print("--------------------------------")
+                    addonTable:Print("|cff%02x%02x%02x%s|r (Level %d %s - %s)", classCol.r * 255, classCol.g * 255, classCol.b * 255, cleanName, level or 0, class or "", rank or "")
+                    addonTable:Print("Status: %s", online and "|cff00e676Online|r" or "|cff757575Offline|r")
+                    if note and note ~= "" then addonTable:Print("Public Note: |cffffffff%s|r", note) end
+                    if officerNote and officerNote ~= "" then addonTable:Print("Officer Note: |cff00e5ff%s|r", officerNote) end
+                    addonTable:Print("--------------------------------")
+                    break
+                end
+            end
+
+            if not found then
+                addonTable:Print("No guild member found matching '|cffffffff%s|r'", targetName)
+            end
+        else
+            -- Toggle Guild Notes window
+            if GuildNotes.frame:IsShown() then
+                GuildNotes.frame:Hide()
+            else
+                if GuildRoster then GuildRoster() end
+                GuildNotes:RefreshRoster()
+                GuildNotes.frame:Show()
+            end
+        end
+    end
+end
+
+-------------------------------------------------------------------------------
+-- Lifecycle Methods
+-------------------------------------------------------------------------------
+function GuildNotes:OnInitialize()
+    self.frame = CreateGuildNotesWindow()
+
+    local em = addonTable.engine.EditMode
+    if em and em.RegisterMover then
+        em:RegisterMover(self.frame, "GuildNotes", "guildNotesPos")
+    end
+
+    if AuraUIDB and AuraUIDB.modules and AuraUIDB.modules.GuildNotes ~= nil then
+        self.enabled = AuraUIDB.modules.GuildNotes
+    end
+end
+
+function GuildNotes:OnEnable()
+    local orig = SlashCmdList["AURAUI"]
+    if orig then
+        SlashCmdList["AURAUI"] = function(msg)
+            HandleSlash(msg)
+            orig(msg)
+        end
+    end
+
+    addonTable:RegisterEvent("GUILD_ROSTER_UPDATE", function()
+        if GuildNotes.frame and GuildNotes.frame:IsShown() then
+            GuildNotes:RefreshRoster(GuildNotes.frame.searchBox:GetText():lower():trim())
+        end
+    end)
+end
+
+function GuildNotes:OnDisable()
+    self.enabled = false
+    if self.frame then
+        self.frame:Hide()
+    end
+end

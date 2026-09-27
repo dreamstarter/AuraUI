@@ -42,6 +42,8 @@ addonTable.defaultProfile = {
         ThreatMeter      = { point = "TOPLEFT", relPoint = "TOPLEFT", x = 200, y = -200 },
         DebuffTracker    = { point = "CENTER", relPoint = "CENTER", x = 0, y = -200 },
         LootAnnounce     = { point = "CENTER", relPoint = "CENTER", x = 300, y = 0 },
+        MapNotes         = { point = "CENTER", relPoint = "CENTER", x = 100, y = 0 },
+        GuildNotes       = { point = "CENTER", relPoint = "CENTER", x = -100, y = 0 },
     },
     actionBars = {
         buttonScale = 1.0,
@@ -189,6 +191,17 @@ addonTable.defaultProfile = {
     lootAnnounce = {
         enabled = true,
         announceInGroup = true,
+    },
+    procEffects = {
+        enabled = true,
+        intensity = "Full",
+        soundOn = true,
+    },
+    mapNotes = {
+        enabled = true,
+    },
+    guildNotes = {
+        enabled = true,
     },
     style = "Flat",
 }

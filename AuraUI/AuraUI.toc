@@ -21,6 +21,7 @@ Engine\Visibility.lua
 Engine\ThemePresets.lua
 Engine\SoundAlerts.lua
 Engine\SpellQueue.lua
+Engine\ProcEffects.lua
 Config.lua
 Core.lua
 
@@ -60,5 +61,7 @@ Modules\RetailBridge.lua
 Modules\ThreatMeter.lua
 Modules\DebuffTracker.lua
 Modules\LootAnnounce.lua
+Modules\MapNotes.lua
+Modules\GuildNotes.lua
 Modules\TestRunner.lua
 

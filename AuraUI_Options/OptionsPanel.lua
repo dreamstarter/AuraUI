@@ -217,6 +217,27 @@ local cbLootAnnounce = CreateSettingCheckbox(mainContent, cbDebuffTracker, 0, -8
         if isChecked then mod:OnEnable() else mod:OnDisable() end
     end
 end)
+local cbProcEffects = CreateSettingCheckbox(mainContent, cbLootAnnounce, 0, -8, "Enable Animated Aura Proc Effects", true, function(self)
+    local isChecked = self:GetChecked()
+    if AuraUIDB and AuraUIDB.modules then AuraUIDB.modules.ProcEffects = isChecked end
+    if addonTable.engine.ProcEffects then
+        if isChecked then addonTable.engine.ProcEffects:Enable() else addonTable.engine.ProcEffects:Disable() end
+    end
+end)
+local cbMapNotes = CreateSettingCheckbox(mainContent, cbProcEffects, 0, -8, "Enable Map Waypoint Notes (/aui note)", true, function(self)
+    local isChecked = self:GetChecked()
+    local mod = addonTable:GetModule("MapNotes")
+    if mod then
+        if isChecked then mod:OnEnable() else mod:OnDisable() end
+    end
+end)
+local cbGuildNotes = CreateSettingCheckbox(mainContent, cbMapNotes, 0, -8, "Enable Guild Roster & Officer Notes (/aui guild)", true, function(self)
+    local isChecked = self:GetChecked()
+    local mod = addonTable:GetModule("GuildNotes")
+    if mod then
+        if isChecked then mod:OnEnable() else mod:OnDisable() end
+    end
+end)
 
 -- 6. Bottom Footer Controls Bar
 local footerBar = CreateFrame("Frame", nil, optionsFrame, "BackdropTemplate")
