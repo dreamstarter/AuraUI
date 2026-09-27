@@ -189,6 +189,34 @@ combatHeader:SetText("COMBAT & PERFORMANCE")
 local cbKeyWait = CreateSettingCheckbox(mainContent, combatHeader, 0, -12, "Cast Actions on Key Down", true)
 local cbDamageText = CreateSettingCheckbox(mainContent, cbKeyWait, 0, -8, "Show Floating Combat Damage Text", true)
 local cbHealText = CreateSettingCheckbox(mainContent, cbDamageText, 0, -8, "Show Floating Combat Healing Text", true)
+local cbSpellQueue = CreateSettingCheckbox(mainContent, cbHealText, 0, -8, "Show Spell Queue Window Visualizer", true, function(self)
+    local isChecked = self:GetChecked()
+    if AuraUIDB and AuraUIDB.modules then AuraUIDB.modules.SpellQueue = isChecked end
+    if addonTable.engine.SpellQueue then
+        if isChecked then addonTable.engine.SpellQueue:Enable() else addonTable.engine.SpellQueue:Disable() end
+    end
+end)
+local cbThreatMeter = CreateSettingCheckbox(mainContent, cbSpellQueue, 0, -8, "Enable Threat Meter Lite", true, function(self)
+    local isChecked = self:GetChecked()
+    local mod = addonTable:GetModule("ThreatMeter")
+    if mod then
+        if isChecked then mod:OnEnable() else mod:OnDisable() end
+    end
+end)
+local cbDebuffTracker = CreateSettingCheckbox(mainContent, cbThreatMeter, 0, -8, "Enable Debuff Priority Tracker", true, function(self)
+    local isChecked = self:GetChecked()
+    local mod = addonTable:GetModule("DebuffTracker")
+    if mod then
+        if isChecked then mod:OnEnable() else mod:OnDisable() end
+    end
+end)
+local cbLootAnnounce = CreateSettingCheckbox(mainContent, cbDebuffTracker, 0, -8, "Enable Loot Announce & Roll Tracker", true, function(self)
+    local isChecked = self:GetChecked()
+    local mod = addonTable:GetModule("LootAnnounce")
+    if mod then
+        if isChecked then mod:OnEnable() else mod:OnDisable() end
+    end
+end)
 
 -- 6. Bottom Footer Controls Bar
 local footerBar = CreateFrame("Frame", nil, optionsFrame, "BackdropTemplate")

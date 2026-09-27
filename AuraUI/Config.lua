@@ -38,6 +38,10 @@ addonTable.defaultProfile = {
         DamageMeter      = { point = "BOTTOMRIGHT", relPoint = "BOTTOMRIGHT", x = -20, y = 40 },
         QuestTracker     = { point = "TOPRIGHT", relPoint = "TOPRIGHT", x = -20, y = -240 },
         DataBars         = { point = "TOP", relPoint = "TOP", x = 0, y = -5 },
+        SpellQueue       = { point = "CENTER", relPoint = "CENTER", x = 0, y = -120 },
+        ThreatMeter      = { point = "TOPLEFT", relPoint = "TOPLEFT", x = 200, y = -200 },
+        DebuffTracker    = { point = "CENTER", relPoint = "CENTER", x = 0, y = -200 },
+        LootAnnounce     = { point = "CENTER", relPoint = "CENTER", x = 300, y = 0 },
     },
     actionBars = {
         buttonScale = 1.0,
@@ -170,6 +174,21 @@ addonTable.defaultProfile = {
         showItemLevelOnCharacter = true,
         raidMarkerBar = true,
         fastCombatText = true,
+    },
+    spellQueue = {
+        enabled = true,
+    },
+    threatMeter = {
+        enabled = true,
+        threshold = 90,
+    },
+    debuffTracker = {
+        enabled = true,
+        warnThreshold = 3.0,
+    },
+    lootAnnounce = {
+        enabled = true,
+        announceInGroup = true,
     },
     style = "Flat",
 }

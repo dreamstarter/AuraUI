@@ -20,6 +20,7 @@ Engine\FirstInstall.lua
 Engine\Visibility.lua
 Engine\ThemePresets.lua
 Engine\SoundAlerts.lua
+Engine\SpellQueue.lua
 Config.lua
 Core.lua
 
@@ -56,5 +57,8 @@ Modules\ForeverClassBars.lua
 Modules\ForeverDungeonTools.lua
 Modules\ChatFilter.lua
 Modules\RetailBridge.lua
+Modules\ThreatMeter.lua
+Modules\DebuffTracker.lua
+Modules\LootAnnounce.lua
 Modules\TestRunner.lua
 
