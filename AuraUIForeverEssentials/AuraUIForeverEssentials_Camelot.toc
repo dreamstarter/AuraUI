@@ -1,0 +1,22 @@
+## Interface: 16001
+## AllowLoadGameType: camelot
+## Title: |cff00e5ffAuraUI|r Forever Essentials
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: Essential tools for WoW Forever.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Main Lua
+AuraUIForeverEssentials.lua
+
+# Travel (flight timer)
+AuraUIForeverEssentials_FlightTimerData.lua
+AuraUIForeverEssentials_FlightTimer.lua
+
+# Threat (threat meter)
+AuraUIForeverEssentials_ThreatData.lua
+AuraUIForeverEssentials_Window.lua
+AuraUIForeverEssentials_ThreatMeter.lua

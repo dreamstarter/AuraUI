@@ -1,0 +1,19 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 16001
+## Title: |cff00e5ffAuraUI|r Nameplates
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: Clean, lightweight nameplates with endless customization.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUINameplatesDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Main Luas
+AuraUINameplates.lua
+AUI_Nameplates_AuraContainers.lua
+AuraUINameplatesFriendly.lua
+AuraUINameplates_Faction.lua
+AuraUINameplates_CastOverlay.lua
+
+# Options

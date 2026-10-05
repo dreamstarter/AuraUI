@@ -1,0 +1,18 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 16001
+## Title: |cff00e5ffAuraUI|r Bags
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: A beautiful visual refresh of Blizzard Bags with intuitive organization.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUIBagsDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Module database (options page lives in AuraUIOptions)
+AuraUIBags_DB.lua
+
+# Core
+AuraUIBags_Categories.lua
+AuraUIBags.lua
+AuraUIBags_Bank.lua

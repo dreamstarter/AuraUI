@@ -1,0 +1,25 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 16001
+## Title: |cff00e5ffAuraUI|r Quality of Life
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: Lightweight quality of life tools and enhancements.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUIQoLDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Main Luas
+AuraUIQoL.lua
+AuraUIQoL_Cursor.lua
+AuraUIQoL_BattleRes.lua
+AuraUIQoL_Bloodlust.lua
+AuraUIQoL_AutoLogging.lua
+AuraUIQoL_Keys.lua
+AuraUIQoL_TeleportPrompt.lua
+AuraUIQoL_Shifter.lua
+AuraUIQoL_MovementAlert.lua
+AuraUIQoL_RaidTools.lua
+AUI_UpgradeCalc.lua
+
+# Options

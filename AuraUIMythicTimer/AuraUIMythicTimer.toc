@@ -1,0 +1,22 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 16001
+## AllowLoadGameType: standard
+## Title: |cff00e5ffAuraUI|r Mythic+ Tools
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: A simple Mythic+ timer with full tracking customizations.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUIMythicTimerDB
+## SavedVariablesPerCharacter: AuraUIMythicRunsDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Main Lua
+AuraUIMythicTimer.lua
+
+# Mythic+ Tools features
+AUI_MythicTimer_TargetedSpellBars.lua
+AUI_MythicTimer_TargetFocusBars.lua
+AUI_MythicTimer_RunSummary.lua
+
+# Options

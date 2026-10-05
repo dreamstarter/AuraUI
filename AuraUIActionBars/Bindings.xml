@@ -1,0 +1,26 @@
+<Bindings>
+	<Binding name="AUI_BAR9_BUTTON1" header="AUI_BAR9" category="AuraUI" />
+	<Binding name="AUI_BAR9_BUTTON2" category="AuraUI" />
+	<Binding name="AUI_BAR9_BUTTON3" category="AuraUI" />
+	<Binding name="AUI_BAR9_BUTTON4" category="AuraUI" />
+	<Binding name="AUI_BAR9_BUTTON5" category="AuraUI" />
+	<Binding name="AUI_BAR9_BUTTON6" category="AuraUI" />
+	<Binding name="AUI_BAR9_BUTTON7" category="AuraUI" />
+	<Binding name="AUI_BAR9_BUTTON8" category="AuraUI" />
+	<Binding name="AUI_BAR9_BUTTON9" category="AuraUI" />
+	<Binding name="AUI_BAR9_BUTTON10" category="AuraUI" />
+	<Binding name="AUI_BAR9_BUTTON11" category="AuraUI" />
+	<Binding name="AUI_BAR9_BUTTON12" category="AuraUI" />
+	<Binding name="AUI_BAR10_BUTTON1" header="AUI_BAR10" category="AuraUI" />
+	<Binding name="AUI_BAR10_BUTTON2" category="AuraUI" />
+	<Binding name="AUI_BAR10_BUTTON3" category="AuraUI" />
+	<Binding name="AUI_BAR10_BUTTON4" category="AuraUI" />
+	<Binding name="AUI_BAR10_BUTTON5" category="AuraUI" />
+	<Binding name="AUI_BAR10_BUTTON6" category="AuraUI" />
+	<Binding name="AUI_BAR10_BUTTON7" category="AuraUI" />
+	<Binding name="AUI_BAR10_BUTTON8" category="AuraUI" />
+	<Binding name="AUI_BAR10_BUTTON9" category="AuraUI" />
+	<Binding name="AUI_BAR10_BUTTON10" category="AuraUI" />
+	<Binding name="AUI_BAR10_BUTTON11" category="AuraUI" />
+	<Binding name="AUI_BAR10_BUTTON12" category="AuraUI" />
+</Bindings>

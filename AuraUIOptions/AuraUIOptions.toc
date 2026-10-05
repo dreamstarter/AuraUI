@@ -1,0 +1,51 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 16001
+## Title: |cff00e5ffAuraUI|r Options
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: AuraUI settings panel. Loads on demand when you open AuraUI options.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## LoadOnDemand: 1
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Widget factory first: everything below builds pages with it. File order
+# mirrors the original suite load order (parent files, then children A-Z).
+AuraUI_Widgets.lua
+AUI__General_Options.lua
+AUI_Fonts_Options.lua
+AUI_Textures_Options.lua
+AUI_Style_Options.lua
+AUI_PartyMode_Options.lua
+
+AUI_ActionBars_Options.lua
+AUI_AuraBuffReminders_Options.lua
+AUI_Bags_Options.lua
+AUI_BlizzardSkin_Options.lua
+AUI_Chat_Options.lua
+AUI_CooldownManager_Options.lua
+AUI_CooldownManager_TalentConditions.lua
+AUI_DamageMeters_Options.lua
+AuraUIDataBars_Options.lua
+AUI_ForeverEssentials_Options.lua
+AUI_ForeverEssentials_Travel_Options.lua
+AUI_ForeverEssentials_Threat_Options.lua
+AUI_Friends_Options.lua
+AUI_Minimap_Options.lua
+AUI_MythicTimer_Options.lua
+AUI_Nameplates_Options.lua
+AUI_QoL_Options.lua
+AUI_QoL_Cursor_Options.lua
+AUI_QoL_BattleRes_Options.lua
+AUI_QoL_AutoLogging_Options.lua
+AUI_QoL_Shifter_Options.lua
+AUI_QoL_MovementAlert_Options.lua
+AUI_QoL_RaidTools_Options.lua
+AUI_UpgradeCalc_Options.lua
+AUI_QuestTracker_Options.lua
+AUI_Quickdraw_Options.lua
+AUI_RaidFrames_ManagerPages.lua
+AUI_RaidFrames_Options.lua
+AUI_ResourceBars_Options.lua
+AUI_UnitFrames_Options.lua
+AUI_PlayerAuraBars_ManagerPages.lua

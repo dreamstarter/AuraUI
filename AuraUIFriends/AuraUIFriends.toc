@@ -1,0 +1,27 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 16001
+## AllowLoadGameType: standard
+## Title: |cff00e5ffAuraUI|r Friends
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: A modern friends list with built-in organization tools.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUIFriendsDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Main Luas
+AuraUIFriends_RealmGroups.lua
+AuraUIFriends.lua
+
+# 12.1 Social UI tile styling (self-gated, inert on 12.0)
+AUI_Friends_Tiles_121.lua
+
+# AUI_Friends_Groups_121.lua is deliberately NOT loaded. Every renderer it can
+# use taints BNet whispers on 12.1 (proven by bisect: mutating the friends list
+# data in any form -- our rows, our element data, or merely re-parenting
+# Blizzard's own nodes -- taints the execution Blizzard's secure OnClick needs,
+# and SetTellTarget's whisper target is a secret value there). Kept on disk so
+# the work is not lost if a later patch changes the rules.
+
+# Options

@@ -1,0 +1,22 @@
+## Interface: 16001
+## AllowLoadGameType: camelot
+## Title: |cff00e5ffAuraUI|r Resource Bars
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: Custom Resource Bars with thresholds, hash lines and more.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUIResourceBarsDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Main Luas
+AuraUIResourceBars.lua
+AUI_ResourceBars_EbonMight121.lua
+AUI_ResourceBars_ArcaneSoul.lua
+AUI_ResourceBars_SwingTimer.lua
+AUI_ResourceBars_WarriorCharges.lua
+AUI_ResourceBars_BlizzClassArt.lua
+
+# Options
+AUI_ResourceBars_Helpers.lua

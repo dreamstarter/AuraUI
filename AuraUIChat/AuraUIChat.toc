@@ -1,0 +1,42 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 16001
+## Title: |cff00e5ffAuraUI|r Chat
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: Modern chat enhancements with useful utilities.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUIChatDB
+## SavedVariablesPerCharacter: AuraUIChatScrollDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Main Luas
+AuraUIChat.lua
+
+# Display engine: our message frames fed by the AddMessage bridge; Blizzard's
+# chat frames stay as the secure formatting/data plane with visuals parked.
+AuraUIChat_Engine.lua
+
+# Owned tab strip: our buttons over Blizzard's window storage (hidden dock
+# stays the routing backend; all management via the C config API).
+AuraUIChat_Tabs.lua
+
+# Stock-style sidebar kits (Blizzard Style / Classic WoW UI chat button column)
+AuraUIChat_SidebarStock.lua
+
+# WoW Forever look (Forever client only, Blizzard Style variant): bronze
+# panel frames, tabs and sidebar kit on our own frames
+AuraUIChat_Forever.lua
+
+# Chat bubbles: Blizzard's own bubbles stay on, we blank their chrome and draw a styled
+# frame on the frame that carries their position.
+AuraUIChat_Bubbles.lua
+
+# Options
+
+# Session scrollback: bridge-tail capture (formatted lines), replay into our
+# message frames (open world only)
+AuraUIChat_SessionHistory.lua
+
+# AuraUI Smart Chat Filter
+AuraUIChat_Filter.lua

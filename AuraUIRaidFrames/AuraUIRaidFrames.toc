@@ -1,0 +1,38 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 16001
+## Title: |cff00e5ffAuraUI|r Raid Frames
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: Incredibly light performance, modern raid frames with endless flexibility.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUIRaidFramesDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Main Luas
+AuraUIRaidFrames.lua
+
+# Blizzard Style / Classic WoW UI (edge, highlights, defaults)
+AUI_RaidFrames_Stock.lua
+
+# Party portrait (every style)
+AUI_RaidFrames_Portrait.lua
+
+# Click Casting
+AUI_RaidFrames_ClickCast.lua
+
+# Buff Manager
+AUI_RaidFrames_BuffManager.lua
+
+# 12.1 Aura Containers
+AUI_RaidFrames_AuraContainers.lua
+
+# 12.1 Debuff Manager (self-gated; inert on 12.0)
+AUI_RaidFrames_DebuffManager.lua
+
+# 12.1 Buff Manager v2: spell -> filter -> indicator model (self-gated)
+AUI_RaidFrames_BuffManager2.lua
+
+# 12.1 Manager options pages (self-gated; inert on 12.0)
+
+# Options

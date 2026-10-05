@@ -1,0 +1,18 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 16001
+## Title: |cff00e5ffAuraUI|r Unit Frames
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: Simple unit frames with a modern visual style.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUIUnitFramesDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Main Luas
+AUI_UnitFrames_Engine.lua
+AuraUIUnitFrames.lua
+AuraUIUnitFrames_PlayerAuraBars.lua
+AUI_UnitFrames_AuraContainers.lua
+
+# Options

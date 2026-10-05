@@ -1,9 +1,0 @@
-<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ https://raw.githubusercontent.com/Gethe/wow-ui-source/live/Interface/FrameXML/UI.xsd">
-    <!-- Reusable Template for AuraUI Action Buttons -->
-    <Button name="AuraUIButtonTemplate" virtual="true" inherits="UIPanelButtonTemplate">
-        <Size x="110" y="22"/>
-        <NormalFont style="GameFontNormalSmall"/>
-        <HighlightFont style="GameFontHighlightSmall"/>
-        <DisabledFont style="GameFontDisableSmall"/>
-    </Button>
-</Ui>

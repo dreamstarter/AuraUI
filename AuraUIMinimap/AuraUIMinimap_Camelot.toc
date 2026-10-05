@@ -1,0 +1,16 @@
+## Interface: 16001
+## AllowLoadGameType: camelot
+## Title: |cff00e5ffAuraUI|r Minimap
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: A new age minimap with clean styling and square layout options.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUIMinimapDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Main Luas
+AuraUIMinimap.lua
+
+# Options

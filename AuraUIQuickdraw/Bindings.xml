@@ -1,0 +1,18 @@
+<Bindings>
+	<Binding name="AUI_RADIAL1" header="AUI_RADIAL" category="AuraUI" />
+	<Binding name="AUI_RADIAL2" category="AuraUI" />
+	<Binding name="AUI_RADIAL3" category="AuraUI" />
+	<Binding name="AUI_RADIAL4" category="AuraUI" />
+	<Binding name="AUI_RADIAL5" category="AuraUI" />
+	<Binding name="AUI_RADIAL6" category="AuraUI" />
+	<Binding name="AUI_RADIAL7" category="AuraUI" />
+	<Binding name="AUI_RADIAL8" category="AuraUI" />
+	<Binding name="AUI_RADIAL9" category="AuraUI" />
+	<Binding name="AUI_RADIAL10" category="AuraUI" />
+	<Binding name="AUI_RADIAL11" category="AuraUI" />
+	<Binding name="AUI_RADIAL12" category="AuraUI" />
+	<Binding name="AUI_RADIAL13" category="AuraUI" />
+	<Binding name="AUI_RADIAL14" category="AuraUI" />
+	<Binding name="AUI_RADIAL15" category="AuraUI" />
+	<Binding name="AUI_RADIAL16" category="AuraUI" />
+</Bindings>

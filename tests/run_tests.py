@@ -1,22 +1,15 @@
-# tests/run_tests.py: Automated verification script for AuraUI files & module integrity
+# tests/run_tests.py: Automated verification script for AuraUI suite integrity & WoW: Forever compliance
 import os
 import re
 import sys
+import glob
 
-if sys.stdout.encoding.lower() != 'utf-8':
+if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
-print("==========================================")
-print("[TEST RUNNER] AuraUI Comprehensive Diagnostic Suite")
-print("==========================================")
-
-toc_file = "AuraUI/AuraUI.toc"
-if not os.path.exists(toc_file):
-    print(f"[ERROR] {toc_file} not found!")
-    sys.exit(1)
-
-with open(toc_file, "r", encoding="utf-8") as f:
-    toc_lines = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
+print("==================================================================")
+print("[TEST RUNNER] AuraUI Comprehensive Diagnostic Suite (WoW: Forever)")
+print("==================================================================")
 
 passed = 0
 failed = 0
@@ -30,37 +23,99 @@ def check(condition, desc):
         failed += 1
         print(f"  [FAIL] {desc}")
 
-print("\n1. Verifying File Manifest in AuraUI.toc...")
-for rel_path in toc_lines:
-    full_path = os.path.join("AuraUI", rel_path.replace("\\", "/"))
-    check(os.path.exists(full_path), f"File manifest check: {rel_path}")
+# 1. AddOn Folders Check
+print("\n1. Verifying AddOn Folders...")
+expected_addons = [
+    "AuraUI", "AuraUIActionBars", "AuraUIAuraBuffReminders", "AuraUIBags",
+    "AuraUIBlizzardSkin", "AuraUIChat", "AuraUICooldownManager", "AuraUIDamageMeters",
+    "AuraUIDataBars", "AuraUIForeverEssentials", "AuraUIFriends", "AuraUILocales",
+    "AuraUIMinimap", "AuraUIMythicTimer", "AuraUINameplates", "AuraUIOptions",
+    "AuraUIQoL", "AuraUIQuestTracker", "AuraUIQuickdraw", "AuraUIRaidFrames",
+    "AuraUIResourceBars", "AuraUIUnitFrames"
+]
+for addon in expected_addons:
+    check(os.path.isdir(addon), f"Addon folder exists: {addon}")
 
-print("\n2. Verifying Module Declarations & Syntax Integrity...")
-modules = []
-modules_dir = "AuraUI/Modules"
-for file_name in os.listdir(modules_dir):
-    if file_name.endswith(".lua"):
-        mod_path = os.path.join(modules_dir, file_name)
-        with open(mod_path, "r", encoding="utf-8") as f:
-            content = f.read()
-            match = re.search(r'addonTable:NewModule\(["\'](\w+)["\']\)', content)
-            if match:
-                mod_name = match.group(1)
-                modules.append(mod_name)
-                check(True, f"Registered module '{mod_name}' in {file_name}")
-            else:
-                check(False, f"No module registration found in {file_name}")
+# 2. TOC Manifest & File Existence Check
+print("\n2. Verifying TOC Manifests & Referenced Files...")
+all_tocs = glob.glob("AuraUI*/*.toc")
+for toc_path in sorted(all_tocs):
+    addon_dir = os.path.dirname(toc_path)
+    with open(toc_path, "r", encoding="utf-8", errors="ignore") as f:
+        lines = f.readlines()
+    
+    # Check interface tag
+    content = "".join(lines)
+    has_interface = "## Interface:" in content
+    check(has_interface, f"{toc_path} defines ## Interface")
 
-print("\n3. Verifying Core Engines...")
-engines = ["Range.lua", "Kick.lua", "Glows.lua", "ProfileSharing.lua", "FirstInstall.lua", "Visibility.lua", "ThemePresets.lua", "SoundAlerts.lua", "SpellQueue.lua", "Profiles.lua", "EditMode.lua", "ProcEffects.lua", "SoundPackCustomizer.lua", "Media.lua"]
-for eng in engines:
-    eng_path = os.path.join("AuraUI/Engine", eng)
-    check(os.path.exists(eng_path), f"Core Engine presence: {eng}")
+    # Check referenced files
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        # Strip game type conditional tags like [AllowLoadGameType standard]
+        file_ref = re.sub(r"\[.*?\]", "", line).strip()
+        if not file_ref:
+            continue
+        target_file = os.path.join(addon_dir, file_ref.replace("\\", "/"))
+        check(os.path.exists(target_file), f"Manifest entry {file_ref} in {toc_path}")
 
-print("\n==========================================")
+# 3. Camelot Metadata & Client Gate Check
+print("\n3. Verifying WoW: Forever Camelot Metadata & Client Gate...")
+gate_file = "AuraUI/AuraUI_ClientGate.lua"
+check(os.path.exists(gate_file), "Client gate file exists (AuraUI_ClientGate.lua)")
+if os.path.exists(gate_file):
+    with open(gate_file, "r", encoding="utf-8") as f:
+        gate_content = f.read()
+    check("AUI_CLIENT_FOREVER = true" in gate_content, "AUI_CLIENT_FOREVER armed in ClientGate")
+    check("16000" in gate_content and "20000" in gate_content, "Interface build range [16000, 20000] handled")
+
+camelot_tocs = glob.glob("AuraUI*/*_Camelot.toc")
+check(len(camelot_tocs) >= 19, f"Camelot TOC files count: {len(camelot_tocs)} (>= 19)")
+for c_toc in camelot_tocs:
+    with open(c_toc, "r", encoding="utf-8", errors="ignore") as f:
+        c_content = f.read()
+    check("AllowLoadGameType: camelot" in c_content, f"camelot game type in {c_toc}")
+    check("16001" in c_content, f"16001 interface in {c_toc}")
+
+# 4. AuraUI Unique Innovations Check
+print("\n4. Verifying AuraUI Unique Innovation Modules...")
+innovations = [
+    ("AuraUI/AuraUI_AutoMarker.lua", "Smart Auto-Marker Module"),
+    ("AuraUI/AuraUI_LootCouncil.lua", "Loot Council Lite Module"),
+    ("AuraUI/AuraUI_MapNotes.lua", "Map Notes & Waypoint Module"),
+    ("AuraUI/AuraUI_GuildNotes.lua", "Guild Roster & Officer Notes Module"),
+    ("AuraUI/AuraUI_SoundPackCustomizer.lua", "Sound Pack Customizer Module"),
+    ("AuraUIChat/AuraUIChat_Filter.lua", "Smart Chat Spam Filter Module"),
+]
+for mod_file, desc in innovations:
+    exists = os.path.exists(mod_file)
+    check(exists, f"{desc} ({mod_file}) exists")
+    if exists:
+        with open(mod_file, "r", encoding="utf-8") as f:
+            code = f.read()
+        check("if AUI_CLIENT_BLOCKED then return end" in code, f"{desc} has AUI_CLIENT_BLOCKED guard")
+
+# 5. Media & Assets Check
+print("\n5. Verifying Media Assets...")
+media_files = [
+    "AuraUI/media/aui-logo.tga",
+    "AuraUI/media/backgrounds/aui-bg-new.png",
+    "AuraUI/media/backgrounds/aui-bg-forever-compressed.png",
+    "AuraUI/media/borders/blizz-border.tga",
+    "AuraUI/media/textures/glass.tga",
+    "AuraUI/media/fonts/Expressway.ttf",
+]
+for m in media_files:
+    check(os.path.exists(m), f"Media asset exists: {m}")
+
+print("\n==================================================================")
 print(f"Diagnostic Results: {passed} Passed, {failed} Failed")
-print("==========================================")
+print("==================================================================")
 
 if failed > 0:
     sys.exit(1)
-
+else:
+    print("[SUCCESS] All diagnostics passed with 100% compliance!")
+    sys.exit(0)

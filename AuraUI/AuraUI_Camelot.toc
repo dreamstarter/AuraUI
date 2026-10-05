@@ -1,0 +1,88 @@
+## Interface: 16001
+## AllowLoadGameType: camelot
+## Title: |cff00e5ffAuraUI|r
+## Notes: Shared framework for the AuraUI addon suite
+## Author: Aura
+## Version: 9.3
+## SavedVariables: AuraUIDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+## X-Curse-Project-ID: 1477613
+## X-Wago-ID: ZKbxbRN1
+
+# Pre-12.1 client failsafe -- MUST load first (arms the per-file guard line)
+AuraUI_ClientGate.lua
+
+# Libraries
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Libs\LibSharedMedia-3.0\LibSharedMedia-3.0.lua
+Libs\LibDeflate\LibDeflate.lua
+Libs\LibKeystone\LibKeystone.lua [AllowLoadGameType standard]
+Libs\LibSpecialization\LibSpecialization.lua [AllowLoadGameType standard]
+
+# Lightweight addon framework (replaces Ace3)
+AuraUI_Lite.lua
+
+# Central multi-language engine (resolves locale + glyph font; defines L/Lf/EnKey)
+# Translation data lives in the LoadOnDemand AuraUILocales child addon,
+# loaded by the engine at ADDON_LOADED for non-English locales only.
+AuraUI_Locale.lua
+
+# Central number-abbreviation engine (K/M/B by default; CJK wan/yi grouping
+# tables keyed by locale; a locale file may register its own algorithm).
+AuraUI_NumberFormat.lua
+
+# One-time data migration (runs before child addons init)
+AuraUI_Migration.lua
+
+# Early startup -- applies engine-cached settings before PLAYER_LOGIN
+AuraUI_Startup.lua
+
+# Shared AuraUI Files
+AuraUI.lua
+AuraUI_RetailAtlas.lua
+AuraUI_BuffPresets.lua
+AuraUI_UICore.lua
+AuraUI_Ticker.lua
+AuraUI_Mouse.lua
+AuraUI_BlizzardParty.lua
+AuraUI_Kick.lua
+AuraUI_MenuFallbacks.lua
+AuraUI_GlobalSearch.lua
+AuraUI_Visibility.lua
+AuraUI_Presets.lua
+AuraUI_Profiles.lua
+AuraUI_PartyMode.lua
+AUI_MacroFactory.lua
+AUI_UnlockMode.lua
+AuraUI_Glows.lua
+AuraUI_ClassicArt.lua
+AuraUI_Range.lua
+AuraUI_AuraKit.lua
+AuraUI_WarriorCharges.lua
+AuraUI_ManaRegenSpark.lua
+AuraUI_ForeverLayout.lua
+AuraUI_FirstInstall.lua
+AuraUI_RaidFramesPopup.lua
+AuraUI_PatchNotesPopup.lua
+AuraUI_WindowSkinsPopup.lua
+AuraUI_SpecOverridesPopup.lua
+AuraUI_StyleCards.lua
+AuraUI_StyleChoicePopup.lua
+AuraUI_StyleLaunchPopup.lua
+AuraUI_VideoGuides.lua
+
+# Spec Overrides (per-spec setting overrides within a profile)
+AuraUI_SpecOverrides.lua
+
+# Conditional Overrides engine (Dungeon/Raid/Arena/BG/Solo/Keybind conditions;
+# override integration lives in AuraUI_SpecOverrides.lua)
+AuraUI_Conditions.lua
+
+# AuraUI Unique Innovations
+AuraUI_AutoMarker.lua
+AuraUI_LootCouncil.lua
+AuraUI_MapNotes.lua
+AuraUI_GuildNotes.lua
+AuraUI_SoundPackCustomizer.lua

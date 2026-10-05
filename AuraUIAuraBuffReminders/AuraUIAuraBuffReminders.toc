@@ -1,0 +1,18 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 16001
+## Title: |cff00e5ffAuraUI|r AuraBuff Reminders
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: Simple raid buff, auras, consumables and talent reminders.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUIAuraBuffRemindersDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Main Lua
+AuraUIAuraBuffReminders.lua
+
+# Talent Reminders (standalone, no ABR dependency)
+AuraUIABR_TalentReminders.lua
+
+# Options

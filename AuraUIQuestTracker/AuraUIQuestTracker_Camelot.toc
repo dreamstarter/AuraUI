@@ -1,0 +1,21 @@
+## Interface: 16001
+## AllowLoadGameType: camelot
+## Title: |cff00e5ffAuraUI|r Quest Tracker
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: A clean, updated reskin of Blizzard's Quest Tracker.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUIQuestTrackerDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Loader
+AuraUIQuestTracker.lua
+
+# Modules
+AuraUIQuestTracker_Skin.lua
+AuraUIQuestTracker_Visibility.lua
+AuraUIQuestTracker_QoL.lua
+
+# Options

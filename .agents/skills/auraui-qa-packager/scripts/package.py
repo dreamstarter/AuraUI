@@ -31,10 +31,14 @@ def package_zip(deploy_path=None):
     dist_dir = os.path.join(ROOT_DIR, "dist")
     os.makedirs(dist_dir, exist_ok=True)
     
-    zip_name = "AuraUI-Suite-v1.0.0.zip"
+    zip_name = "AuraUI-Suite-v1.1.0.zip"
     zip_path = os.path.join(dist_dir, zip_name)
     
-    folders_to_include = ["AuraUI", "AuraUI_Options"]
+    folders_to_include = sorted([
+        d for d in os.listdir(ROOT_DIR)
+        if os.path.isdir(os.path.join(ROOT_DIR, d)) and d.startswith("AuraUI")
+    ])
+    print(f"  -> Bundling {len(folders_to_include)} suite addons: {', '.join(folders_to_include)}")
     
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for folder in folders_to_include:

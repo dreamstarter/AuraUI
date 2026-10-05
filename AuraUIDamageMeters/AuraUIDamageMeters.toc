@@ -1,0 +1,16 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 16001
+## Title: |cff00e5ffAuraUI|r Damage Meters
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: Lightweight damage meters with simple but powerful customization.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUIDamageMetersDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Main Luas
+AuraUIDamageMeters.lua
+AuraUIDamageMeters_SpellHistory.lua
+
+# Options

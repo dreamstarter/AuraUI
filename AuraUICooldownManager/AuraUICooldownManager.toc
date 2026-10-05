@@ -1,0 +1,23 @@
+## Interface: 120000, 120001, 120005, 120007, 120100, 16001
+## Title: |cff00e5ffAuraUI|r Cooldown Manager
+## Category: |cff00e5ffAura|rUI
+## Group: AuraUI
+## Notes: A CDM replacement focused on performance, customizations and alerts.
+## Author: Aura
+## Version: 9.3
+## Dependencies: AuraUI
+## SavedVariables: AuraUICooldownManagerDB
+## IconTexture: Interface\AddOns\AuraUI\media\aui-logo.tga
+
+# Main Lua
+AuraUICooldownManager.lua
+AuraUICdmHooks.lua
+AuraUICdmSpellPicker.lua
+AuraUICdmBarGlows.lua
+AuraUICdmBuffBars.lua
+AuraUICdmTbbDecimals.lua
+AuraUICdmFakeActive.lua
+AuraUICdmRPTSync.lua
+AuraUICdmTalentConditions.lua
+
+# Options
