@@ -609,6 +609,7 @@ initFrame:SetScript("OnEvent", function(self)
         { key="timewalking",       label="Timewalking" },
         { key="delve",             label="Delve" },
         { key="lair",              label="Lair" },
+        { key="scenario",          label="Scenarios" },
         -- Orthogonal state gate (not a location): unchecking hides this
         -- section while in combat.
         { key="in_combat",         label="In Combat" },
@@ -1460,6 +1461,40 @@ initFrame:SetScript("OnEvent", function(self)
             );  y = y - h
 
             y = BuildForeverCustomRows(parent, y)
+
+            _, h = W:Spacer(parent, y, 20);  y = y - h
+            _, h = W:SectionHeader(parent, SECTION_RAID_BUFFS, y);  y = y - h
+
+            -- Where to Show | Show When (+ reminder sound cog)
+            _, h = SectionControlRow(parent, y, {
+                whereStore = RWhere,
+                whereItems = FOREVER_WHERE_ITEMS,
+                whereTooltip = "Pick which content the Raid Buff reminders appear in.\nRested areas (cities and inns) always stay hidden.",
+                showWhenStore = RShowWhen,
+                showWhenTooltip = "Others are missing my buff: remind when a groupmate is missing a buff you can cast.\nI am missing others' buffs: remind when you are missing a buff a groupmate could give you (only shown when someone who can cast it is present). Off by default.",
+                soundSec = RDB, soundField = "sectionSound",
+                onChange = RefreshAll,
+                onShowWhenChange = function() if _G._EABR_UpdateGroupAuraRegistration then _G._EABR_UpdateGroupAuraRegistration() end end,
+            });  y = y - h
+
+            -- Checkbox grid for the 4 Forever raid buffs
+            do
+                local FOREVER_RAID_BUFFS = _G._EABR_FOREVER_RAID_BUFFS or _G._EABR_RAID_BUFFS or {}
+                local gridItems = {}
+                for _, buff in ipairs(FOREVER_RAID_BUFFS) do
+                    if buff.class == "DRUID" or buff.class == "PRIEST" or buff.class == "MAGE" or buff.class == "WARRIOR" then
+                        gridItems[#gridItems+1] = {
+                            label = _G._EABR_SpellName(buff.castSpell, buff.name),
+                            classToken = buff.class,
+                            key = buff.key,
+                            getVal = function() local r = RDB(); return r and r.enabled and r.enabled[buff.key] end,
+                            setVal = function(v) local r = RDB(); if r and r.enabled then r.enabled[buff.key] = v end end,
+                        }
+                    end
+                end
+                h = BuildCheckboxGrid(parent, y, gridItems, RefreshAll, _gridCellRefs)
+                y = y - h
+            end
 
             -- No preview header here, so no click-to-scroll mappings to wire.
             return math.abs(y)

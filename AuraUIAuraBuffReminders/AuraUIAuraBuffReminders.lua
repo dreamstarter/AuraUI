@@ -96,10 +96,42 @@ end
 
 local spellNameCache = {}
 local function SpellName(id)
+    if not id then return nil end
     local c = spellNameCache[id]; if c then return c end
-    local n = C_Spell.GetSpellName(id)
+    local n = (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(id))
+        or (C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(id) and C_Spell.GetSpellInfo(id).name)
+        or (GetSpellInfo and GetSpellInfo(id))
     if n then spellNameCache[id] = n end; return n
 end
+
+EABR.GROUP_SPELL_ALIASES = {
+    -- Druid
+    ["Mark of the Wild"]             = "Gift of the Wild",
+    ["Gift of the Wild"]             = "Mark of the Wild",
+    -- Priest
+    ["Power Word: Fortitude"]        = "Prayer of Fortitude",
+    ["Prayer of Fortitude"]          = "Power Word: Fortitude",
+    ["Divine Spirit"]                = "Prayer of Spirit",
+    ["Prayer of Spirit"]             = "Divine Spirit",
+    ["Shadow Protection"]            = "Prayer of Shadow Protection",
+    ["Prayer of Shadow Protection"]  = "Shadow Protection",
+    -- Mage
+    ["Arcane Intellect"]             = "Arcane Brilliance",
+    ["Arcane Brilliance"]            = "Arcane Intellect",
+    -- Paladin
+    ["Blessing of Might"]            = "Greater Blessing of Might",
+    ["Greater Blessing of Might"]    = "Blessing of Might",
+    ["Blessing of Wisdom"]           = "Greater Blessing of Wisdom",
+    ["Greater Blessing of Wisdom"]   = "Blessing of Wisdom",
+    ["Blessing of Kings"]            = "Greater Blessing of Kings",
+    ["Greater Blessing of Kings"]    = "Blessing of Kings",
+    ["Blessing of Sanctuary"]        = "Greater Blessing of Sanctuary",
+    ["Greater Blessing of Sanctuary"]= "Blessing of Sanctuary",
+    ["Blessing of Light"]            = "Greater Blessing of Light",
+    ["Greater Blessing of Light"]    = "Blessing of Light",
+    ["Blessing of Salvation"]        = "Greater Blessing of Salvation",
+    ["Greater Blessing of Salvation"]= "Blessing of Salvation",
+}
 
 local _cachedPlayerClass
 local function GetPlayerClass()
@@ -203,6 +235,9 @@ local function InRealInstancedContent()
     if C_Garrison and C_Garrison.IsOnGarrisonMap and C_Garrison.IsOnGarrisonMap() then
         return false
     end
+    if C_Housing and C_Housing.IsInsideHouseOrPlot and C_Housing.IsInsideHouseOrPlot() then
+        return false
+    end
 
     if _cachedIType == "party"
     or _cachedIType == "raid"
@@ -272,6 +307,7 @@ function EABR.CurrentDifficultyCat()
         if EABR.FOREVER and (d == 9 or d == 148) then return "r_normal" end
     elseif it == "scenario" then
         if d == 208 then return "s_delve" end
+        return "s_scenario"
     end
     return nil
 end
@@ -281,6 +317,9 @@ end
 -- (Heroic / Normal / Follower), timewalking, delve, lair. Returns nil for
 -- unmapped instanced content (e.g. PvP) so reminders never silently vanish there.
 function EABR.CurrentWhereBucket(inInstance)
+    if C_Housing and C_Housing.IsInsideHouseOrPlot and C_Housing.IsInsideHouseOrPlot() then
+        return "open_world"
+    end
     -- Lairs carry the World Tier flag instead of a difficulty id the allowlist
     -- knows; the instance gate keeps the flag from ever reclassifying the
     -- open world, whatever else it may be set on.
@@ -293,6 +332,7 @@ function EABR.CurrentWhereBucket(inInstance)
     if cat == "r_heroic" then return "raid_heroic" end
     if cat == "r_normal" or cat == "r_lfr" then return "raid_normal_lfr" end
     if cat == "s_delve" then return "delve" end
+    if cat == "s_scenario" then return "scenario" end
     if not inInstance then return "open_world" end
     return nil
 end
@@ -424,11 +464,11 @@ if EABR.IsRuntimeNonSecret(20707) then NON_SECRET_SPELL_IDS[20707] = true end
 local function SnapshotPlayerAuras()
     wipe(_preCombatAuraCache)
     if EABR.FOREVER then
-        -- WoW Forever: only the custom spell IDs read this snapshot in combat;
-        -- with none tracked there is nothing to scan, and the retail whitelist
-        -- below is dead there either way.
         local fo = db and db.profile.forever
-        if not (fo and fo.customIDs and fo.customIDs[1]) then return end
+        local rb = db and db.profile.raidBuffs
+        local hasCustom = fo and fo.customIDs and fo.customIDs[1]
+        local hasRaidBuffs = rb and rb.enabled
+        if not (hasCustom or hasRaidBuffs) then return end
     else
         for id in pairs(NON_SECRET_SPELL_IDS) do
             local result = C_UnitAuras.GetPlayerAuraBySpellID(id)
@@ -439,11 +479,19 @@ local function SnapshotPlayerAuras()
     -- partymate combats first. 12.1: index scan hard-errors under restrictions (M+/raid) even OOC; whitelisted lookups still work, extras skipped.
     if AuraUI.AuraKit and AuraUI.AuraKit.AurasRestricted() then return end
     for i = 1, AURA_SCAN_LIMIT do
-        local aura = C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+        local aura = C_UnitAuras and C_UnitAuras.GetAuraDataByIndex and C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+        if not aura and UnitBuff then
+            local bName, bIcon, _, _, _, _, _, _, _, bSid = UnitBuff("player", i)
+            if bName then aura = { name = bName, icon = bIcon, spellId = bSid } end
+        end
         if not aura then break end
         local sid = aura.spellId
         if sid and not isSecret(sid) and not NON_SECRET_SPELL_IDS[sid] then
             _preCombatAuraCache[sid] = true
+        end
+        local aname = aura.name
+        if aname and not isSecret(aname) then
+            _preCombatAuraCache[aname] = true
         end
     end
 end
@@ -531,6 +579,37 @@ local function PlayerHasAuraByID(spellIDs, sectionKey)
     return false
 end
 
+function EABR.PlayerHasAuraByNameOrAlias(spellID)
+    if not spellID then return false end
+    if PlayerHasAuraByID({spellID}) then return true end
+
+    local name = SpellName(spellID)
+    if not name then return false end
+    local alias = EABR.GROUP_SPELL_ALIASES and EABR.GROUP_SPELL_ALIASES[name]
+
+    if InCombat() then
+        if _preCombatAuraCache[name] then return true end
+        if alias and _preCombatAuraCache[alias] then return true end
+        return false
+    end
+
+    for i = 1, AURA_SCAN_LIMIT do
+        local aura = C_UnitAuras and C_UnitAuras.GetAuraDataByIndex and C_UnitAuras.GetAuraDataByIndex("player", i, "HELPFUL")
+        if not aura and UnitBuff then
+            local bName = UnitBuff("player", i)
+            if bName then aura = { name = bName } end
+        end
+        if not aura then break end
+        local aname = aura.name
+        if aname and not isSecret(aname) then
+            if aname == name or (alias and aname == alias) then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 -- Stances are shapeshift forms, not auras (GetPlayerAuraBySpellID can't see them); scan the stance bar instead. Returns (known-in-bar, currently-active).
 local function GetStanceState(stanceSpellID)
     local numForms = GetNumShapeshiftForms()
@@ -564,6 +643,32 @@ end
 local function _unitOk(u) return UnitExists(u) and UnitIsConnected(u) and not UnitIsDeadOrGhost(u) end
 local function _unitHasBuff(u, spellIDs)
     local inCombat = InCombat()
+    if EABR.FOREVER then
+        if inCombat and UnitIsUnit(u, "player") then
+            for j = 1, #spellIDs do
+                local id = spellIDs[j]
+                if _preCombatAuraCache[id] then return true end
+            end
+            local bName = SpellName(spellIDs[1])
+            if bName and _preCombatAuraCache[bName] then return true end
+            if bName and EABR.GROUP_SPELL_ALIASES and EABR.GROUP_SPELL_ALIASES[bName] and _preCombatAuraCache[EABR.GROUP_SPELL_ALIASES[bName]] then
+                return true
+            end
+            return false
+        end
+        for i = 1, 40 do
+            local name, _, _, _, _, _, _, _, _, sid = UnitBuff(u, i)
+            if not name then break end
+            for j = 1, #spellIDs do
+                if sid == spellIDs[j] then return true end
+            end
+            local bName = SpellName(spellIDs[1])
+            if bName and (name == bName or (EABR.GROUP_SPELL_ALIASES and name == EABR.GROUP_SPELL_ALIASES[bName])) then
+                return true
+            end
+        end
+        return false
+    end
     -- Fast path for player: use GetPlayerAuraBySpellID for whitelisted IDs
     if UnitIsUnit(u, "player") then
         for j = 1, #spellIDs do
@@ -824,6 +929,39 @@ local function CountGroupBuffCoverage(spellIDs, benefit)
         end
     end
     return have, total
+end
+
+local function FindMissingBuffTarget(buff)
+    if not buff then return nil end
+    local spellIDs = buff.buffIDs
+    local benefit = buff.benefit
+    if not (IsInGroup() or IsInRaid()) then
+        if not _unitHasBuff("player", spellIDs) then return "player" end
+        return nil
+    end
+    if EABR.UnitBenefits("player", benefit) and _unitOk("player") and not _unitHasBuff("player", spellIDs) then
+        return "player"
+    end
+    if IsInRaid() then
+        for i = 1, GetNumGroupMembers() do
+            local u = "raid"..i
+            if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) then
+                if EABR.UnitBenefits(u, benefit) and not _unitHasBuff(u, spellIDs) then
+                    return u
+                end
+            end
+        end
+    else
+        for i = 1, GetNumSubgroupMembers() do
+            local u = "party"..i
+            if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) then
+                if EABR.UnitBenefits(u, benefit) and not _unitHasBuff(u, spellIDs) then
+                    return u
+                end
+            end
+        end
+    end
+    return nil
 end
 
 -- True if the buff exists on any group member, any source. Used for Symbiotic Relationship.
@@ -1135,6 +1273,32 @@ local RAID_BUFFS = {
     { key="sky",    class="SHAMAN",  name="Skyfury",                castSpell=462854, buffIDs={462854},  check="raid" },
     -- Hunter's Mark: disabled (under maintenance); entry intentionally omitted.
 }
+
+local FOREVER_RAID_BUFFS = {
+    { key="motw",   class="DRUID",   name="Mark of the Wild",       castSpell=1126,
+      buffIDs={1126, 5232, 6756, 5234, 8907, 9884, 9885, 21849, 21850}, check="raid" },
+    { key="bshout", class="WARRIOR", name="Battle Shout",           castSpell=6673,
+      buffIDs={6673, 5242, 6192, 11549, 11550, 11551, 25289}, check="raid", benefit="attackPower" },
+    { key="fort",   class="PRIEST",  name="Power Word: Fortitude",  castSpell=1243,
+      buffIDs={1243, 1244, 1245, 2791, 10937, 10938, 21562, 21564}, check="raid" },
+    { key="ai",     class="MAGE",    name="Arcane Intellect",       castSpell=1459,
+      buffIDs={1459, 1460, 1461, 10156, 10157, 23028, 27127}, check="raid", benefit="intellect" },
+}
+
+local function PlayerKnowsRaidBuff(buff)
+    if not buff then return false end
+    if Known(buff.castSpell) then return true end
+    if buff.buffIDs then
+        for _, id in ipairs(buff.buffIDs) do
+            if Known(id) then return true end
+        end
+    end
+    local name = buff.name
+    if name and (C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(name) or (GetSpellInfo and GetSpellInfo(name))) then
+        return true
+    end
+    return false
+end
 
 -------------------------------------------------------------------------------
 --  SPELL DATA Auras (some non-secret, some still OOC-only)
@@ -2557,29 +2721,31 @@ end
 -- Binds the player's own castable raid buff to the button (OOC only), so the
 -- binding is already warm when combat starts.
 function EABR.SyncProviderCastSpell()
-    if EABR.FOREVER then return end  -- no raid buff providers on WoW Forever; the button is never built there
     if InCombatLockdown() then return end
     local btn = EABR.EnsureProviderCastButton()
     if not btn then return end
     local playerClass = GetPlayerClass()
-    local spellID
-    for _, buff in ipairs(RAID_BUFFS) do
-        if buff.class == playerClass and buff.check == "raid" and Known(buff.castSpell) then
+    local spellID, spellName
+    local buffs = EABR.FOREVER and FOREVER_RAID_BUFFS or RAID_BUFFS
+    for _, buff in ipairs(buffs) do
+        if buff.class == playerClass and buff.check == "raid" and PlayerKnowsRaidBuff(buff) then
             spellID = buff.castSpell
+            spellName = buff.name or (spellID and SpellName(spellID))
             break
         end
     end
     -- Attribute writes are skipped when the resolved spell is unchanged
     -- (this runs on every OOC refresh). Invalidation inputs: the resolved
     -- spellID (covers spec/known changes via SPELLS_CHANGED refreshes).
-    if spellID == EABR._providerCastSpell then
+    if spellID == EABR._providerCastSpell and spellName == EABR._providerCastSpellName then
         if not EABR._providerCastVisible then EABR.ParkProviderCastButton() end
         return
     end
     EABR._providerCastSpell = spellID
+    EABR._providerCastSpellName = spellName
     if spellID then
         btn:SetAttribute("type1", "spell")
-        btn:SetAttribute("spell1", spellID)
+        btn:SetAttribute("spell1", (EABR.FOREVER and spellName) or spellID)
         btn:SetAttribute("item1", nil)
         btn:SetAttribute("macrotext1", nil)
         btn:SetAttribute("unit1", "player") -- explicit unit so casting doesn't depend on your current target
@@ -2631,6 +2797,15 @@ function EABR.SetProviderCastCombatVisible(visible, m)
         EABR.ApplyIconBagCount(btn, nil, nil, nil)
     end
     if not InCombatLockdown() then
+        if m.targetUnit then
+            btn:SetAttribute("unit1", m.targetUnit)
+        else
+            btn:SetAttribute("unit1", "player")
+        end
+        if EABR.FOREVER and m.data and m.data.name then
+            btn:SetAttribute("type1", "spell")
+            btn:SetAttribute("spell1", m.data.name)
+        end
         EABR.LayoutProviderCastHome()
         btn:EnableMouse(true)
     end
@@ -3320,9 +3495,10 @@ do
     if iAmMissing and (IsInGroup() or IsInRaid()) then
         groupClasses = EABR.BuildGroupClassSet()
     end
-    for _, buff in ipairs(RAID_BUFFS) do
+    local buffs = EABR.FOREVER and FOREVER_RAID_BUFFS or RAID_BUFFS
+    for _, buff in ipairs(buffs) do
         if rb.enabled[buff.key] and not (buff.noPvP and inPvP) then
-            local iCast = (buff.class == playerClass) and Known(buff.castSpell)
+            local iCast = (buff.class == playerClass) and PlayerKnowsRaidBuff(buff)
             -- Provider view when I can cast it; receiver view when I can't
             -- but a groupmate of the right class can (and my class benefits).
             local doReceiver = (not iCast) and iAmMissing and buff.check == "raid"
@@ -3331,7 +3507,7 @@ do
             if iCast or doReceiver then
                 -- In combat, skip buffs whose IDs are not all whitelisted
                 local canCheck = true
-                if inCombat then
+                if inCombat and not EABR.FOREVER then
                     if buff.check == "huntersMark" then
                         canCheck = true  -- uses state flag, no aura reading needed
                     else
@@ -3343,12 +3519,16 @@ do
                 if canCheck then
                     local isMissing = false
                     local groupHave, groupTotal
+                    local targetUnit
                     if iCast then
                         if buff.check == "huntersMark" then
                             isMissing = inCombat and _huntersMarkNeeded
                         elseif othersMissing and buff.check == "raid" and (IsInGroup() or IsInRaid()) then
                             groupHave, groupTotal = CountGroupBuffCoverage(buff.buffIDs, buff.benefit)
                             isMissing = groupTotal > 0 and groupHave < groupTotal
+                            if isMissing and EABR.FOREVER and buff.key ~= "bshout" then
+                                targetUnit = FindMissingBuffTarget(buff)
+                            end
                         else
                             isMissing = not PlayerHasAuraByID(buff.buffIDs, "raidbuff")
                         end
@@ -3361,6 +3541,7 @@ do
                         e.spellID = buff.castSpell
                         e.label = ShortLabel(_G._EABR_SpellName(buff.castSpell, buff.name))
                         if buff.check == "huntersMark" then e.unit = "target" end
+                        if targetUnit then e.targetUnit = targetUnit end
                         e.cat = "raidbuff"; e.data = buff
                         e.dismissKey = buff.key and ("raidbuff:" .. buff.key) or nil
                         if groupTotal then
@@ -3971,8 +4152,7 @@ function EABR.CollectForever(missing, inInstance, inPvP, restricted)
     if not keys then keys = {}; EABR._foreverKeys = keys end
     for i = 1, #custom do
         local id = custom[i]
-        ids[1] = id
-        if not PlayerHasAuraByID(ids) then
+        if not EABR.PlayerHasAuraByNameOrAlias(id) then
             local dk = keys[id]
             if not dk then dk = "forever:" .. id; keys[id] = dk end
             local e = AcquireEntry()
@@ -4049,7 +4229,7 @@ local function Refresh()
     ---------------------------------------------------------------------------
     --  1) Raid Buffs (runs in and out of combat)
     ---------------------------------------------------------------------------
-    if remindersOn and not EABR.FOREVER then
+    if remindersOn then
         CollectRaidBuffs(missing, playerClass, inInstance, inCombat)
     end
 
@@ -5004,6 +5184,7 @@ function EABR:OnEnable()
     _G._EABR_RegisterUnlock = RegisterUnlockElements
     _G._EABR_ApplyUnlockPos = ApplyUnlockPos
     _G._EABR_RAID_BUFFS = RAID_BUFFS
+    _G._EABR_FOREVER_RAID_BUFFS = FOREVER_RAID_BUFFS
     _G._EABR_AURAS = AURAS
     _G._EABR_ROGUE_POISONS = ROGUE_POISONS
     _G._EABR_PALADIN_RITES = PALADIN_RITES
@@ -5137,7 +5318,8 @@ function EABR:OnEnable()
         -- Only the own-cast group checks re-evaluate on roster changes: a
         -- provider's coverage already follows the joiner's UNIT_AURA.
         EABR._rosterRefresh = false
-        for _, buff in ipairs(RAID_BUFFS) do
+        local buffs = EABR.FOREVER and FOREVER_RAID_BUFFS or RAID_BUFFS
+        for _, buff in ipairs(buffs) do
             if buff.class == playerClass then
                 _needGroupAura = true
                 EABR._needsProviderCoverage = true
@@ -5172,15 +5354,12 @@ function EABR:OnEnable()
         end
     end
     _G._EABR_UpdateGroupAuraRegistration = UpdateGroupAuraRegistration
-    if not EABR.FOREVER then UpdateGroupAuraRegistration() end  -- Forever keeps the player-only UNIT_AURA from file scope
+    UpdateGroupAuraRegistration()
 
     -- Register spellcast tracking for Hunters (combat reminder for Hunter's Mark)
     if not EABR.FOREVER and GetPlayerClass() == "HUNTER" then
         mainFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
     end
-
-    -- WoW Forever tracks no group buffs, so the range tracking below has nothing to feed.
-    if EABR.FOREVER then return end
 
     ---------------------------------------------------------------------------
     --  Range updates: UNIT_IN_RANGE_UPDATE mirrors the raid frames' range path, so range changes retrigger group-buff evaluation without polling.
@@ -5486,6 +5665,8 @@ if EABR.FOREVER then
     mainFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
     mainFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
     mainFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+    mainFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+    mainFrame:RegisterEvent("SPELLS_CHANGED")
     mainFrame:RegisterUnitEvent("UNIT_AURA", "player")
     mainFrame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
     mainFrame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
