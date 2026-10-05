@@ -1295,18 +1295,16 @@ function ECHAT.SyncChatFrameState()
             -- late writes move the rect as well as resizing it.
             if not drift and pos.point == "BOTTOMLEFT" and pos.x and pos.y then
                 local l, b = cf1s:GetLeft(), cf1s:GetBottom()
-                -- Stock styles clamp against their art's reserve: compare with
-                -- the spot the clamp lets the frame reach, or a position saved
-                -- nearer an edge (the AuraUI look clamps at zero) would
-                -- read as drift on every pass and never converge.
                 local tx, ty = pos.x, pos.y
-                if ns.ChatStock() then
-                    local il, ir, it, ib = cf1s:GetClampRectInsets()
-                    local sw, sh = UIParent:GetWidth(), UIParent:GetHeight()
-                    if il and sw and sh then
-                        tx = math.max(-il, math.min(tx, sw - ir - sz.w))
-                        ty = math.max(-ib, math.min(ty, sh - it - sz.h))
+                local sw, sh = UIParent:GetWidth(), UIParent:GetHeight()
+                if sw and sh then
+                    local il, ir, it, ib = 0, 0, 0, 0
+                    if cf1s.GetClampRectInsets then
+                        il, ir, it, ib = cf1s:GetClampRectInsets()
+                        il, ir, it, ib = il or 0, ir or 0, it or 0, ib or 0
                     end
+                    tx = math.max(-il, math.min(tx, sw - ir - sz.w))
+                    ty = math.max(-ib, math.min(ty, sh - it - sz.h))
                 end
                 if l and b and not (isec and (isec(l) or isec(b)))
                     and (math.abs(l - tx) > 1.5 or math.abs(b - ty) > 1.5) then
@@ -1720,47 +1718,104 @@ local function ApplyChatPosition()
         end
     end
     if not pos.point or not (px and py) then return end
-    cf1:ClearAllPoints()
-    local composed = false
+
+    -- Check whether points already match to make this apply strictly idempotent.
+    -- Unconditionally calling ClearAllPoints causes a 1-frame blink where the edit
+    -- box, tabs, and backdrop lose geometry during Edit Mode re-applies, level ups,
+    -- and login passes, and misaligns text click hitboxes (e.g. right-click player).
+    local currentMatches = false
+    local nPoints = cf1:GetNumPoints()
     if sizeLane and isCenterAnchor then
-        -- CENTER-form saves (unlock mode Save & Exit) compose the rect around
-        -- the centre outright. A lone CENTER anchor would resolve on the
-        -- frame's explicit size for a tick, and the canonicalize below would
-        -- read the corner of THAT rect -- landing the chat half the size delta
-        -- away from where it was dropped.
-        cf1:SetPoint("TOPLEFT", UIParent, "CENTER", px - size.w / 2, py + size.h / 2)
-        cf1:SetPoint("BOTTOMRIGHT", UIParent, "CENTER", px + size.w / 2, py - size.h / 2)
-        composed = true
-    else
-        cf1:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, px or 0, py or 0)
-    end
-    if sizeLane then
-        if pos.point == "BOTTOMLEFT" and (pos.relPoint or "BOTTOMLEFT") == "BOTTOMLEFT" then
-            cf1:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT",
-                (px or 0) + size.w, (py or 0) + size.h)
-            composed = true
-        elseif pos.point == "TOPLEFT" and (pos.relPoint or "TOPLEFT") == "TOPLEFT" then
-            -- TOPLEFT-form positions compose the size anchor directly. A
-            -- single-anchor apply would leave the rect on the frame's
-            -- explicit (Edit Mode, stale) size until the deferred normalize
-            -- below lands -- a window where a late Edit Mode pass baked the
-            -- old size in.
-            cf1:SetPoint("BOTTOMRIGHT", UIParent, "TOPLEFT",
-                (px or 0) + size.w, (py or 0) - size.h)
-            composed = true
+        if nPoints == 2 then
+            local p1, rel1, rp1, x1, y1 = cf1:GetPoint(1)
+            local p2, rel2, rp2, x2, y2 = cf1:GetPoint(2)
+            if p1 == "TOPLEFT" and rel1 == UIParent and rp1 == "CENTER"
+                and p2 == "BOTTOMRIGHT" and rel2 == UIParent and rp2 == "CENTER"
+                and math.abs((x1 or 0) - (px - size.w / 2)) < 0.1
+                and math.abs((y1 or 0) - (py + size.h / 2)) < 0.1
+                and math.abs((x2 or 0) - (px + size.w / 2)) < 0.1
+                and math.abs((y2 or 0) - (py - size.h / 2)) < 0.1 then
+                currentMatches = true
+            end
         end
-        if not composed or pos.point ~= "BOTTOMLEFT" then
-            -- Canonicalize foreign forms to BOTTOMLEFT once the rect
-            -- resolves, so every later apply composes on the fast path.
-            C_Timer.After(0, function()
-                local cfg2 = ECHAT.DB()
-                if not cfg2 or not cfg2.chatPosition or ns._chatSizingActive then return end
-                local l, b = cf1:GetLeft(), cf1:GetBottom()
-                local issecret = _G.issecretvalue
-                if not (l and b) or (issecret and (issecret(l) or issecret(b))) then return end
-                cfg2.chatPosition = { point = "BOTTOMLEFT", relPoint = "BOTTOMLEFT", x = l, y = b }
-                ApplyChatPosition()
-            end)
+    elseif sizeLane and pos.point == "BOTTOMLEFT" and (pos.relPoint or "BOTTOMLEFT") == "BOTTOMLEFT" then
+        if nPoints == 2 then
+            local p1, rel1, rp1, x1, y1 = cf1:GetPoint(1)
+            local p2, rel2, rp2, x2, y2 = cf1:GetPoint(2)
+            if p1 == "BOTTOMLEFT" and rel1 == UIParent and rp1 == "BOTTOMLEFT"
+                and p2 == "TOPRIGHT" and rel2 == UIParent and rp2 == "BOTTOMLEFT"
+                and math.abs((x1 or 0) - (px or 0)) < 0.1
+                and math.abs((y1 or 0) - (py or 0)) < 0.1
+                and math.abs((x2 or 0) - ((px or 0) + size.w)) < 0.1
+                and math.abs((y2 or 0) - ((py or 0) + size.h)) < 0.1 then
+                currentMatches = true
+            end
+        end
+    elseif sizeLane and pos.point == "TOPLEFT" and (pos.relPoint or "TOPLEFT") == "TOPLEFT" then
+        if nPoints == 2 then
+            local p1, rel1, rp1, x1, y1 = cf1:GetPoint(1)
+            local p2, rel2, rp2, x2, y2 = cf1:GetPoint(2)
+            if p1 == "TOPLEFT" and rel1 == UIParent and rp1 == "TOPLEFT"
+                and p2 == "BOTTOMRIGHT" and rel2 == UIParent and rp2 == "TOPLEFT"
+                and math.abs((x1 or 0) - (px or 0)) < 0.1
+                and math.abs((y1 or 0) - (py or 0)) < 0.1
+                and math.abs((x2 or 0) - ((px or 0) + size.w)) < 0.1
+                and math.abs((y2 or 0) - ((py or 0) - size.h)) < 0.1 then
+                currentMatches = true
+            end
+        end
+    elseif not sizeLane and nPoints == 1 then
+        local p1, rel1, rp1, x1, y1 = cf1:GetPoint(1)
+        if p1 == pos.point and rel1 == UIParent and rp1 == (pos.relPoint or pos.point)
+            and math.abs((x1 or 0) - (px or 0)) < 0.1
+            and math.abs((y1 or 0) - (py or 0)) < 0.1 then
+            currentMatches = true
+        end
+    end
+
+    local composed = false
+    if not currentMatches then
+        cf1:ClearAllPoints()
+        if sizeLane and isCenterAnchor then
+            -- CENTER-form saves (unlock mode Save & Exit) compose the rect around
+            -- the centre outright. A lone CENTER anchor would resolve on the
+            -- frame's explicit size for a tick, and the canonicalize below would
+            -- read the corner of THAT rect -- landing the chat half the size delta
+            -- away from where it was dropped.
+            cf1:SetPoint("TOPLEFT", UIParent, "CENTER", px - size.w / 2, py + size.h / 2)
+            cf1:SetPoint("BOTTOMRIGHT", UIParent, "CENTER", px + size.w / 2, py - size.h / 2)
+            composed = true
+        else
+            cf1:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, px or 0, py or 0)
+        end
+        if sizeLane then
+            if pos.point == "BOTTOMLEFT" and (pos.relPoint or "BOTTOMLEFT") == "BOTTOMLEFT" then
+                cf1:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT",
+                    (px or 0) + size.w, (py or 0) + size.h)
+                composed = true
+            elseif pos.point == "TOPLEFT" and (pos.relPoint or "TOPLEFT") == "TOPLEFT" then
+                -- TOPLEFT-form positions compose the size anchor directly. A
+                -- single-anchor apply would leave the rect on the frame's
+                -- explicit (Edit Mode, stale) size until the deferred normalize
+                -- below lands -- a window where a late Edit Mode pass baked the
+                -- old size in.
+                cf1:SetPoint("BOTTOMRIGHT", UIParent, "TOPLEFT",
+                    (px or 0) + size.w, (py or 0) - size.h)
+                composed = true
+            end
+            if not composed or pos.point ~= "BOTTOMLEFT" then
+                -- Canonicalize foreign forms to BOTTOMLEFT once the rect
+                -- resolves, so every later apply composes on the fast path.
+                C_Timer.After(0, function()
+                    local cfg2 = ECHAT.DB()
+                    if not cfg2 or not cfg2.chatPosition or ns._chatSizingActive then return end
+                    local l, b = cf1:GetLeft(), cf1:GetBottom()
+                    local issecret = _G.issecretvalue
+                    if not (l and b) or (issecret and (issecret(l) or issecret(b))) then return end
+                    cfg2.chatPosition = { point = "BOTTOMLEFT", relPoint = "BOTTOMLEFT", x = l, y = b }
+                    ApplyChatPosition()
+                end)
+            end
         end
     end
     -- The visible stack follows numerically; sync it now rather than at the
@@ -1961,13 +2016,18 @@ ns._EMChatSizeDelta = EMChatSizeDelta
 do
     local emWatch = CreateFrame("Frame")
     emWatch:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
+    emWatch:RegisterEvent("PLAYER_LEVEL_UP")
+    local emPending = false
     emWatch:SetScript("OnEvent", function()
         local cfg = ECHAT.DB()
         if not (cfg and cfg.chatPosition) then return end
         local cf1 = _G.ChatFrame1
         local d1 = cf1 and CFD(cf1)
         if not (d1 and d1.anchorGuarded) then return end
+        if emPending then return end
+        emPending = true
         C_Timer.After(0, function()
+            emPending = false
             if ns._chatSizingActive then return end
             if _G.AuraUI and _G.AuraUI._unlockActive then return end
             local c2 = ECHAT.DB()
@@ -2018,10 +2078,16 @@ local function InstallChatAnchorGuard()
     local d = CFD(cf1)
     if d.anchorGuarded then return end
     d.anchorGuarded = true
+    local guardPending = false
     hooksecurefunc(cf1, "ApplySystemAnchor", function()
         local cfg = ECHAT.DB()
         if cfg and cfg.chatPosition then
-            C_Timer.After(0, ApplyChatPosition)
+            if guardPending then return end
+            guardPending = true
+            C_Timer.After(0, function()
+                guardPending = false
+                ApplyChatPosition()
+            end)
         end
     end)
 end

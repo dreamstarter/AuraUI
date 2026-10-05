@@ -75,6 +75,9 @@ local DEFAULT_X, DEFAULT_Y = -340, 60
 --  armed for as long as the feature is enabled, never tied to `active`.
 --------------------------------------------------------------------------------
 local function CurrentWhereBucket()
+    if C_Housing and C_Housing.IsInsideHouseOrPlot and C_Housing.IsInsideHouseOrPlot() then
+        return "open_world"
+    end
     if C_ChallengeMode and C_ChallengeMode.IsChallengeModeActive and C_ChallengeMode.IsChallengeModeActive() then
         return "dungeon_mythic"
     end
@@ -96,6 +99,7 @@ local function CurrentWhereBucket()
         if diffID == 33 then return "timewalking" end
     elseif iType == "scenario" then
         if diffID == 208 then return "delve" end
+        return "scenario"
     end
     if IsInInstance and not IsInInstance() then return "open_world" end
     return nil -- unmapped (PvP/arena/etc.) -- always shows, matching AuraBuffReminders
@@ -107,7 +111,7 @@ end
 -- (PvP, arena) never hides.
 local LOCATION_KEYS = {
     "open_world", "raid_mythic", "raid_heroic", "raid_normal_lfr",
-    "dungeon_mythic", "dungeon_nonmythic", "timewalking", "delve", "lair",
+    "dungeon_mythic", "dungeon_nonmythic", "timewalking", "delve", "lair", "scenario",
 }
 
 -- Combat state is TRACKED from PLAYER_REGEN_DISABLED / _ENABLED instead of
