@@ -10387,6 +10387,352 @@ initFrame:SetScript("OnEvent", function(self)
         _, h = W:Spacer(parent, y, 20);  y = y - h
 
         -----------------------------------------------------------------------
+        --  DEBUFF BASED COLORING
+        -----------------------------------------------------------------------
+        _, h = W:SectionHeader(parent, AuraUI.L("Debuff Based Coloring"), y);  y = y - h
+
+        local function isDebuffColoringOff()
+            return not (DBVal("debuffColoringEnabled") == true)
+        end
+        local function isBorderThickenDisabled()
+            return isDebuffColoringOff() or (DBVal("debuffColorMode") ~= "border") or not (DBVal("debuffBorderThicken") == true)
+        end
+        local function RefreshDebuffPlates()
+            if ns.NP_UpdateDebuffColorConfig then ns.NP_UpdateDebuffColorConfig() end
+            for _, plate in pairs(ns.plates) do
+                plate:UpdateHealthColor()
+                if plate.ApplyBorderColor then plate:ApplyBorderColor() end
+                if plate.ApplyBorder then plate:ApplyBorder() end
+            end
+        end
+
+        -- Row 1: Enable Debuff Coloring (left) ---- Coloring Target (right)
+        local debuffMainRow
+        debuffMainRow, h = W:DualRow(parent, y,
+            { type="toggle", text="Enable Debuff Coloring",
+              tooltip="Colors enemy nameplates based on your active debuffs on the target.",
+              getValue=function() return DBVal("debuffColoringEnabled") == true end,
+              setValue=function(v)
+                DB().debuffColoringEnabled = v
+                RefreshDebuffPlates()
+                AuraUI:RefreshPage()
+              end },
+            { type="dropdown", text="Coloring Target",
+              tooltip="Choose whether to color the enemy health bar or the border.",
+              disabled=isDebuffColoringOff, disabledTooltip="Enable Debuff Coloring",
+              values={ health="Health Bar", border="Border" },
+              order={ "health", "border" },
+              getValue=function() return DBVal("debuffColorMode") or "health" end,
+              setValue=function(v)
+                DB().debuffColorMode = v
+                RefreshDebuffPlates()
+                AuraUI:RefreshPage()
+              end });  y = y - h
+
+        -- Row 2: Thicken Border while Active (left) ---- Thicken Amount (right)
+        local debuffThickenRow
+        debuffThickenRow, h = W:DualRow(parent, y,
+            { type="toggle", text="Thicken Border while Active",
+              tooltip="Makes the nameplate border thicker while a debuff color is active.",
+              disabled=function() return isDebuffColoringOff() or (DBVal("debuffColorMode") ~= "border") end,
+              disabledTooltip="Border coloring mode must be selected",
+              getValue=function() return DBVal("debuffBorderThicken") ~= false end,
+              setValue=function(v)
+                DB().debuffBorderThicken = v
+                RefreshDebuffPlates()
+                AuraUI:RefreshPage()
+              end },
+            { type="slider", text="Thicken Amount", min=1, max=3, step=1,
+              tooltip="Number of pixels to increase border thickness by while active.",
+              disabled=isBorderThickenDisabled, disabledTooltip="Thicken Border while Active",
+              getValue=function() return DBVal("debuffThickenAmount") or 1 end,
+              setValue=function(v)
+                DB().debuffThickenAmount = v
+                RefreshDebuffPlates()
+              end });  y = y - h
+
+        -- Row 3: Combo: 2 Debuffs (left) ---- Combo: 3+ Debuffs (right)
+        local comboRow
+        comboRow, h = W:DualRow(parent, y,
+            { type="toggle", text="Combo: 2 Debuffs",
+              tooltip="Applies a special combo color when any 2 of your tracked debuffs are on the target.",
+              disabled=isDebuffColoringOff, disabledTooltip="Enable Debuff Coloring",
+              getValue=function()
+                local db = DB()
+                local combos = (db and db.debuffCombos) or defaults.debuffCombos
+                return combos and combos[2] and combos[2].enabled == true
+              end,
+              setValue=function(v)
+                local db = DB()
+                if not db.debuffCombos then
+                    db.debuffCombos = {
+                        [2] = { enabled = false, color = { r = 1, g = 0.6, b = 0 } },
+                        [3] = { enabled = false, color = { r = 0.8, g = 0.2, b = 1 } },
+                        [4] = { enabled = false, color = { r = 1, g = 1, b = 0 } },
+                    }
+                end
+                if not db.debuffCombos[2] then db.debuffCombos[2] = { enabled = false, color = { r = 1, g = 0.6, b = 0 } } end
+                db.debuffCombos[2].enabled = v
+                RefreshDebuffPlates()
+                AuraUI:RefreshPage()
+              end },
+            { type="toggle", text="Combo: 3+ Debuffs",
+              tooltip="Applies a special combo color when 3 or more of your tracked debuffs are on the target.",
+              disabled=isDebuffColoringOff, disabledTooltip="Enable Debuff Coloring",
+              getValue=function()
+                local db = DB()
+                local combos = (db and db.debuffCombos) or defaults.debuffCombos
+                return combos and combos[3] and combos[3].enabled == true
+              end,
+              setValue=function(v)
+                local db = DB()
+                if not db.debuffCombos then
+                    db.debuffCombos = {
+                        [2] = { enabled = false, color = { r = 1, g = 0.6, b = 0 } },
+                        [3] = { enabled = false, color = { r = 0.8, g = 0.2, b = 1 } },
+                        [4] = { enabled = false, color = { r = 1, g = 1, b = 0 } },
+                    }
+                end
+                if not db.debuffCombos[3] then db.debuffCombos[3] = { enabled = false, color = { r = 0.8, g = 0.2, b = 1 } } end
+                db.debuffCombos[3].enabled = v
+                RefreshDebuffPlates()
+                AuraUI:RefreshPage()
+              end });  y = y - h
+
+        -- Inline swatches on combo row
+        if not AuraUI._prebuilding then
+            local comboLeftRgn = comboRow._leftRegion
+            local c2Get = function()
+                local db = DB()
+                local c = db and db.debuffCombos and db.debuffCombos[2] and db.debuffCombos[2].color
+                if not c then c = defaults.debuffCombos[2].color end
+                return c.r, c.g, c.b
+            end
+            local c2Set = function(r, g, b)
+                local db = DB()
+                if not db.debuffCombos then db.debuffCombos = {} end
+                if not db.debuffCombos[2] then db.debuffCombos[2] = { enabled = true, color = { r = r, g = g, b = b } }
+                else db.debuffCombos[2].color = { r = r, g = g, b = b } end
+                RefreshDebuffPlates()
+            end
+            local c2Swatch, c2Update = AuraUI.BuildColorSwatch(comboLeftRgn, comboLeftRgn:GetFrameLevel() + 5, c2Get, c2Set, nil, 20)
+            PP.Point(c2Swatch, "RIGHT", comboLeftRgn._control, "LEFT", -12, 0)
+            AuraUI.RegisterWidgetRefresh(function()
+                local off = isDebuffColoringOff()
+                c2Swatch:SetAlpha(off and 0.15 or 1)
+                c2Swatch:EnableMouse(not off)
+                c2Update()
+            end)
+            local off2 = isDebuffColoringOff()
+            c2Swatch:SetAlpha(off2 and 0.15 or 1)
+            c2Swatch:EnableMouse(not off2)
+
+            local comboRightRgn = comboRow._rightRegion
+            local c3Get = function()
+                local db = DB()
+                local c = db and db.debuffCombos and db.debuffCombos[3] and db.debuffCombos[3].color
+                if not c then c = defaults.debuffCombos[3].color end
+                return c.r, c.g, c.b
+            end
+            local c3Set = function(r, g, b)
+                local db = DB()
+                if not db.debuffCombos then db.debuffCombos = {} end
+                if not db.debuffCombos[3] then db.debuffCombos[3] = { enabled = true, color = { r = r, g = g, b = b } }
+                else db.debuffCombos[3].color = { r = r, g = g, b = b } end
+                RefreshDebuffPlates()
+            end
+            local c3Swatch, c3Update = AuraUI.BuildColorSwatch(comboRightRgn, comboRightRgn:GetFrameLevel() + 5, c3Get, c3Set, nil, 20)
+            PP.Point(c3Swatch, "RIGHT", comboRightRgn._control, "LEFT", -12, 0)
+            AuraUI.RegisterWidgetRefresh(function()
+                local off = isDebuffColoringOff()
+                c3Swatch:SetAlpha(off and 0.15 or 1)
+                c3Swatch:EnableMouse(not off)
+                c3Update()
+            end)
+            local off3 = isDebuffColoringOff()
+            c3Swatch:SetAlpha(off3 and 0.15 or 1)
+            c3Swatch:EnableMouse(not off3)
+        end
+
+        -- Debuff Priority Slots (1 to 10 for player class)
+        local _, playerClassToken = UnitClass("player")
+        if not playerClassToken then playerClassToken = "WARRIOR" end
+
+        local defaultSlotColors = {
+            { r = 1.0, g = 0.2, b = 0.2 },
+            { r = 1.0, g = 0.5, b = 0.1 },
+            { r = 1.0, g = 0.8, b = 0.1 },
+            { r = 0.2, g = 1.0, b = 0.3 },
+            { r = 0.2, g = 0.8, b = 1.0 },
+            { r = 0.4, g = 0.4, b = 1.0 },
+            { r = 0.8, g = 0.3, b = 1.0 },
+            { r = 1.0, g = 0.4, b = 0.8 },
+            { r = 0.9, g = 0.9, b = 0.9 },
+            { r = 0.6, g = 0.8, b = 0.6 },
+        }
+
+        local function EnsureClassEntry(idx)
+            local db = DB()
+            if not db.debuffColors then db.debuffColors = {} end
+            if not db.debuffColors[playerClassToken] then db.debuffColors[playerClassToken] = {} end
+            local list = db.debuffColors[playerClassToken]
+            if not list[idx] then
+                list[idx] = {
+                    enabled = true,
+                    spellID = "",
+                    color = defaultSlotColors[idx] or { r = 1, g = 1, b = 1 },
+                }
+            end
+            return list[idx]
+        end
+
+        local function GetDebuffSlotLabel(idx)
+            local db = DB()
+            local list = db and db.debuffColors and db.debuffColors[playerClassToken]
+            local entry = list and list[idx]
+            local sid = entry and entry.spellID
+            if not sid or sid == "" or sid == 0 then
+                return string.format(AuraUI.L("Debuff %d (Empty)"), idx)
+            end
+            local num = tonumber(sid)
+            local sName = tostring(sid)
+            if num and C_Spell and C_Spell.GetSpellInfo then
+                local info = C_Spell.GetSpellInfo(num)
+                if info and info.name then sName = info.name end
+            elseif num and GetSpellInfo then
+                local nm = GetSpellInfo(num)
+                if nm then sName = nm end
+            end
+            return string.format("%d: %s", idx, sName)
+        end
+
+        local function BuildDebuffSlotCfg(idx)
+            return {
+                type = "toggle",
+                text = GetDebuffSlotLabel(idx),
+                tooltip = string.format("Priority %d debuff coloring.", idx),
+                disabled = isDebuffColoringOff,
+                disabledTooltip = "Enable Debuff Coloring",
+                getValue = function()
+                    local entry = EnsureClassEntry(idx)
+                    return entry.enabled ~= false and entry.spellID ~= "" and entry.spellID ~= 0
+                end,
+                setValue = function(v)
+                    local entry = EnsureClassEntry(idx)
+                    entry.enabled = v
+                    RefreshDebuffPlates()
+                    AuraUI:RefreshPage()
+                end,
+            }
+        end
+
+        -- Render 10 debuff slots across 5 DualRows
+        for rowIdx = 1, 5 do
+            local leftSlot = (rowIdx - 1) * 2 + 1
+            local rightSlot = leftSlot + 1
+            local slotRow
+            slotRow, h = W:DualRow(parent, y,
+                BuildDebuffSlotCfg(leftSlot),
+                BuildDebuffSlotCfg(rightSlot));  y = y - h
+
+            if not AuraUI._prebuilding then
+                -- Left slot swatch & cog
+                local lRgn = slotRow._leftRegion
+                local lGet = function()
+                    local entry = EnsureClassEntry(leftSlot)
+                    local c = entry.color or defaultSlotColors[leftSlot]
+                    return c.r, c.g, c.b
+                end
+                local lSet = function(r, g, b)
+                    local entry = EnsureClassEntry(leftSlot)
+                    entry.color = { r = r, g = g, b = b }
+                    RefreshDebuffPlates()
+                end
+                local lSwatch, lUpdate = AuraUI.BuildColorSwatch(lRgn, lRgn:GetFrameLevel() + 5, lGet, lSet, nil, 20)
+                PP.Point(lSwatch, "RIGHT", lRgn._control, "LEFT", -12, 0)
+                AuraUI.RegisterWidgetRefresh(function()
+                    local off = isDebuffColoringOff()
+                    lSwatch:SetAlpha(off and 0.15 or 1)
+                    lSwatch:EnableMouse(not off)
+                    lUpdate()
+                end)
+                local lOff = isDebuffColoringOff()
+                lSwatch:SetAlpha(lOff and 0.15 or 1)
+                lSwatch:EnableMouse(not lOff)
+
+                AuraUI.BuildInlineCog(lRgn, {
+                    chain = false, anchorTo = lSwatch,
+                    disabled = isDebuffColoringOff,
+                    disabledTooltip = "Enable Debuff Coloring",
+                    title = string.format("Debuff %d", leftSlot),
+                    rows = {
+                        { type = "input", label = "Spell ID",
+                          tooltip = "Enter the spell ID for this debuff priority slot.",
+                          commitOnBlur = true,
+                          get = function()
+                              local entry = EnsureClassEntry(leftSlot)
+                              return tostring(entry.spellID or "")
+                          end,
+                          set = function(v)
+                              local entry = EnsureClassEntry(leftSlot)
+                              entry.spellID = v
+                              RefreshDebuffPlates()
+                              AuraUI:RefreshPage()
+                          end },
+                    },
+                })
+
+                -- Right slot swatch & cog
+                local rRgn = slotRow._rightRegion
+                local rGet = function()
+                    local entry = EnsureClassEntry(rightSlot)
+                    local c = entry.color or defaultSlotColors[rightSlot]
+                    return c.r, c.g, c.b
+                end
+                local rSet = function(r, g, b)
+                    local entry = EnsureClassEntry(rightSlot)
+                    entry.color = { r = r, g = g, b = b }
+                    RefreshDebuffPlates()
+                end
+                local rSwatch, rUpdate = AuraUI.BuildColorSwatch(rRgn, rRgn:GetFrameLevel() + 5, rGet, rSet, nil, 20)
+                PP.Point(rSwatch, "RIGHT", rRgn._control, "LEFT", -12, 0)
+                AuraUI.RegisterWidgetRefresh(function()
+                    local off = isDebuffColoringOff()
+                    rSwatch:SetAlpha(off and 0.15 or 1)
+                    rSwatch:EnableMouse(not off)
+                    rUpdate()
+                end)
+                local rOff = isDebuffColoringOff()
+                rSwatch:SetAlpha(rOff and 0.15 or 1)
+                rSwatch:EnableMouse(not rOff)
+
+                AuraUI.BuildInlineCog(rRgn, {
+                    chain = false, anchorTo = rSwatch,
+                    disabled = isDebuffColoringOff,
+                    disabledTooltip = "Enable Debuff Coloring",
+                    title = string.format("Debuff %d", rightSlot),
+                    rows = {
+                        { type = "input", label = "Spell ID",
+                          tooltip = "Enter the spell ID for this debuff priority slot.",
+                          commitOnBlur = true,
+                          get = function()
+                              local entry = EnsureClassEntry(rightSlot)
+                              return tostring(entry.spellID or "")
+                          end,
+                          set = function(v)
+                              local entry = EnsureClassEntry(rightSlot)
+                              entry.spellID = v
+                              RefreshDebuffPlates()
+                              AuraUI:RefreshPage()
+                          end },
+                    },
+                })
+            end
+        end
+
+        _, h = W:Spacer(parent, y, 20);  y = y - h
+
+        -----------------------------------------------------------------------
         --  THREAT COLORS (INSTANCES ONLY)
         -----------------------------------------------------------------------
         _, h = W:SectionHeader(parent, SECTION_THREAT, y);  y = y - h

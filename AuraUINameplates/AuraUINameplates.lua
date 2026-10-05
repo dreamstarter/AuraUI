@@ -277,6 +277,30 @@ local defaults = {
     nameplateYOffset = 0,
     enemyNameTextSize = 11,
     enemyNameTextReactionColor = false,
+    debuffColoringEnabled = false,
+    debuffColorMode = "health",
+    debuffBorderThicken = true,
+    debuffThickenAmount = 1,
+    debuffColors = {
+        WARRIOR = {},
+        PALADIN = {},
+        HUNTER = {},
+        ROGUE = {},
+        PRIEST = {},
+        DEATHKNIGHT = {},
+        SHAMAN = {},
+        MAGE = {},
+        WARLOCK = {},
+        MONK = {},
+        DRUID = {},
+        DEMONHUNTER = {},
+        EVOKER = {},
+    },
+    debuffCombos = {
+        [2] = { enabled = false, color = { r = 1, g = 0.6, b = 0 } },
+        [3] = { enabled = false, color = { r = 0.8, g = 0.2, b = 1 } },
+        [4] = { enabled = false, color = { r = 1, g = 1, b = 0 } },
+    },
     debuffTimerColor = { r = 1, g = 1, b = 1 },
     auraTextPosition = "topleft",
     debuffTimerPosition = "topleft",
@@ -4096,15 +4120,17 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
             ns.NP_ApplyClassicHealthArt(plate)
             return
         end
+        local extraSize = (self._debuffBorderActive and (p or defaults).debuffBorderThicken and ((p or defaults).debuffThickenAmount or 1)) or 0
         if ns.IsCustomBorderEnabled() then
             -- Custom border replaces the simple one: hide the PP strips on the
             -- health bar and render the custom border on its own child frame.
             PP.HideBorder(plate.health)
-            ns.ApplyCustomBorderStyle(plate)
+            local baseSz = (p and p.customBorderSize) or defaults.customBorderSize
+            ns.ApplyCustomBorderStyle(plate, extraSize > 0 and (baseSz + extraSize) or nil)
         else
             ns.HideCustomBorder(plate)
             if IsBorderEnabled() then
-                PP.SetBorderSize(plate.health, ns.NP_BorderSize())
+                PP.SetBorderSize(plate.health, ns.NP_BorderSize() + extraSize)
                 PP.ShowBorder(plate.health)
             else
                 PP.HideBorder(plate.health)
@@ -4118,6 +4144,19 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
     end
     function plate:ApplyBorderColor()
         if not PP then return end
+        if self._debuffBorderActive and self._activeDebuffColor and (not (self._isTarget and ns.GetTargetGlowBorderColor())) then
+            local bc = self._activeDebuffColor
+            if ns.IsCustomBorderEnabled() then
+                if not self._customBorder then ns.ApplyCustomBorderStyle(self) end
+                if self._customBorder and AuraUI.SetBorderStyleColor then
+                    AuraUI.SetBorderStyleColor(self._customBorder, bc.r, bc.g, bc.b, 1)
+                end
+            else
+                PP.SetBorderColor(plate.health, bc.r, bc.g, bc.b, 1)
+            end
+            if p and p.castIconCustomBorder then ns.ApplyCastIconBorder(plate) end
+            return
+        end
         if ns.IsCustomBorderEnabled() then
             ns.ApplyCustomBorderColor(plate)
         else
@@ -4905,6 +4944,7 @@ function ns.RefreshAllSettings()
     -- Before any plate repaints: the Class / Reaction slot flags the health pass reads.
     ns.NP_RefreshSlotClassFlags()
     ns.NP_RefreshThreatPctFlag()
+    ns.NP_UpdateDebuffColorConfig()
     -- Bump the appearance generation so SetUnit re-runs ApplyAppearance per plate; without it,
     -- cache-hit re-spawns skip the static appearance work and new settings never apply.
     ns._npAppearanceGen = (ns._npAppearanceGen or 0) + 1
@@ -6622,6 +6662,116 @@ function ns.GetBlizzardBarColor(frame)
     if type(r) ~= "number" or type(g) ~= "number" or type(b) ~= "number" then return false end
     return true, r, g, b
 end
+ns._debuffColorLookup = {}
+ns._debuffColorSpellMap = {}
+ns._debuffColorNameMap = {}
+ns._debuffComboMap = {}
+
+function ns.NP_UpdateDebuffColorConfig()
+    local curDb = (ns.NP_GetProfile and ns.NP_GetProfile()) or p or defaults
+    local _, pClass = UnitClass("player")
+    if not pClass then return end
+
+    local classList = curDb.debuffColors and curDb.debuffColors[pClass]
+    local list = {}
+    local spellMap = {}
+    local nameMap = {}
+
+    if classList and type(classList) == "table" then
+        for i = 1, 10 do
+            local entry = classList[i]
+            if entry and entry.spellID and entry.spellID ~= "" and entry.spellID ~= 0 then
+                local sId = tonumber(entry.spellID)
+                local sName = tostring(entry.spellID)
+                if sId and C_Spell and C_Spell.GetSpellInfo then
+                    local sInfo = C_Spell.GetSpellInfo(sId)
+                    if sInfo and sInfo.name then sName = sInfo.name end
+                elseif sId and GetSpellInfo then
+                    local nm = GetSpellInfo(sId)
+                    if nm then sName = nm end
+                end
+                local item = {
+                    priority = i,
+                    spellID = sId or entry.spellID,
+                    spellName = sName,
+                    enabled = entry.enabled ~= false,
+                    color = entry.color or { r = 1, g = 0.2, b = 0.2 },
+                }
+                list[#list + 1] = item
+                if sId then spellMap[sId] = item end
+                if sName and sName ~= "" then nameMap[sName] = item end
+            end
+        end
+    end
+
+    ns._debuffColorLookup = list
+    ns._debuffColorSpellMap = spellMap
+    ns._debuffColorNameMap = nameMap
+    ns._debuffComboMap = curDb.debuffCombos or defaults.debuffCombos
+end
+
+function ns.NP_ScanUnitDebuffColor(unit)
+    local curDb = p or defaults
+    if not (curDb and curDb.debuffColoringEnabled) then return false end
+    if not ns._debuffColorLookup or #ns._debuffColorLookup == 0 then return false end
+    if not unit or not UnitCanAttack("player", unit) then return false end
+
+    local matchCount = 0
+    local bestPriority = 999
+    local bestColor = nil
+
+    local i = 1
+    while i <= 40 do
+        local name, spellId, source
+        if C_UnitAuras and C_UnitAuras.GetDebuffDataByIndex then
+            local data = C_UnitAuras.GetDebuffDataByIndex(unit, i)
+            if not data then break end
+            name = data.name
+            spellId = data.spellId
+            source = data.sourceUnit
+        elseif UnitDebuff then
+            local n, _, _, _, _, _, src, _, _, sid = UnitDebuff(unit, i)
+            if not n then break end
+            name = n
+            spellId = sid
+            source = src
+        else
+            break
+        end
+
+        if source == "player" then
+            local entry = (spellId and ns._debuffColorSpellMap[spellId])
+                or (name and ns._debuffColorNameMap[name])
+            if entry and entry.enabled then
+                matchCount = matchCount + 1
+                if entry.priority < bestPriority then
+                    bestPriority = entry.priority
+                    bestColor = entry.color
+                end
+            end
+        end
+        i = i + 1
+    end
+
+    if matchCount > 0 then
+        local combos = ns._debuffComboMap
+        if matchCount >= 4 and combos and combos[4] and combos[4].enabled then
+            local c = combos[4].color
+            return true, c.r, c.g, c.b
+        elseif matchCount >= 3 and combos and combos[3] and combos[3].enabled then
+            local c = combos[3].color
+            return true, c.r, c.g, c.b
+        elseif matchCount >= 2 and combos and combos[2] and combos[2].enabled then
+            local c = combos[2].color
+            return true, c.r, c.g, c.b
+        elseif bestColor then
+            return true, bestColor.r, bestColor.g, bestColor.b
+        end
+    end
+
+    return false
+end
+
 local function GetReactionColor(unit)
     -- Per-call marker read SYNCHRONOUSLY by UpdateHealthColor right after this
     -- returns: true only when this resolution landed on the non-tank Near
@@ -6646,6 +6796,10 @@ local function GetReactionColor(unit)
     if db.questMobColorEnabled and IsQuestMob(unit) then
         local qc = db.questMobColor or defaults.questMobColor
         return qc.r, qc.g, qc.b
+    end
+    -- 2b. Debuff Based Coloring (Health Bar mode)
+    if db.debuffColoringEnabled and (db.debuffColorMode ~= "border") and ns._reactionDebuffColor then
+        return ns._reactionDebuffColor.r, ns._reactionDebuffColor.g, ns._reactionDebuffColor.b
     end
     -- Threat colors that can NEVER be overwritten:
     -- Non-tank: has aggro, near aggro Tank: losing aggro, no aggro
@@ -7817,6 +7971,9 @@ function NameplateFrame:SetUnit(unit, nameplate)
     self:RegisterUnitEvent("UNIT_ABSORB_AMOUNT_CHANGED", unit)
     self:RegisterUnitEvent("UNIT_NAME_UPDATE", unit)
     self:RegisterUnitEvent("UNIT_THREAT_LIST_UPDATE", unit)
+    if (p or defaults).debuffColoringEnabled then
+        self:RegisterUnitEvent("UNIT_AURA", unit)
+    end
     -- Attach a pooled aura-container bundle for this unit.
     if ns.NPC_AttachPlate then ns.NPC_AttachPlate(self, unit) end
     -- Non-Target Opacity (zero cost while off: one numeric compare).
@@ -7918,6 +8075,8 @@ end
 function NameplateFrame:ClearUnit()
     self:UnregisterAllEvents()
     self._factionEv = nil
+    self._activeDebuffColor = nil
+    self._debuffBorderActive = nil
 
     -- Classic WoW UI: blank the level in the border's plate. Plates are
     -- pooled, so a recycled one would otherwise carry the last unit's level
@@ -8417,6 +8576,22 @@ end
 function NameplateFrame:UpdateHealthColor()
     local unit = self.unit
     if not unit then return end
+    -- Debuff scan: sets self._activeDebuffColor and ns._reactionDebuffColor
+    ns._reactionDebuffColor = nil
+    local curDb = p or defaults
+    if curDb.debuffColoringEnabled then
+        local hasDbf, dr, dg, db = ns.NP_ScanUnitDebuffColor(unit)
+        if hasDbf then
+            self._activeDebuffColor = { r = dr, g = dg, b = db }
+            if curDb.debuffColorMode ~= "border" then
+                ns._reactionDebuffColor = self._activeDebuffColor
+            end
+        else
+            self._activeDebuffColor = nil
+        end
+    else
+        self._activeDebuffColor = nil
+    end
     -- Skip-if-unchanged: GetReactionColor returns plain profile-sourced numbers (every return
     -- path verified non-secret). Threat events fire constantly with an unchanged result, so
     -- compare against the last applied values and skip the setter. Cache nil'd in ClearUnit.
@@ -8454,6 +8629,21 @@ function NameplateFrame:UpdateHealthColor()
     elseif hr ~= self._lastHCr or hg ~= self._lastHCg or hb ~= self._lastHCb then
         self._lastHCr, self._lastHCg, self._lastHCb = hr, hg, hb
         self.health:SetStatusBarColor(hr, hg, hb)
+    end
+    -- Debuff Border mode: color and thicken the border while active
+    if curDb.debuffColoringEnabled and curDb.debuffColorMode == "border" then
+        local debuffActive = (self._activeDebuffColor ~= nil)
+        if debuffActive ~= (self._debuffBorderActive or false) then
+            self._debuffBorderActive = debuffActive
+            self:ApplyBorderColor()
+            if curDb.debuffBorderThicken then
+                self:ApplyBorder()
+            end
+        end
+    elseif self._debuffBorderActive then
+        self._debuffBorderActive = false
+        self:ApplyBorderColor()
+        self:ApplyBorder()
     end
     -- Core Text Positions "Class / Reaction Color" (one boolean read while no slot uses it).
     -- While the name's slot is in that mode it owns the name colour, so both arms of the
@@ -10104,6 +10294,19 @@ end
 function NameplateFrame:UNIT_THREAT_LIST_UPDATE()
     self:UpdateHealthColor()
 end
+function NameplateFrame:UNIT_AURA(unit)
+    if unit and unit ~= self.unit then return end
+    local curDb = p or defaults
+    if curDb and curDb.debuffColoringEnabled then
+        self:UpdateHealthColor()
+        if curDb.debuffColorMode == "border" then
+            self:ApplyBorderColor()
+            if curDb.debuffBorderThicken then
+                self:ApplyBorder()
+            end
+        end
+    end
+end
 -- Faction badge: faction and PvP flag changes. The tap-state repaint rides the
 -- shared UNIT_FACTION handler (factionFrame), not this one.
 function NameplateFrame:UNIT_FACTION()
@@ -10879,6 +11082,7 @@ do
         -- profile, and _C() color lookups would read the old spec's stale data.
         p = ENP.db.profile
         RefreshThreatCache()
+        ns.NP_UpdateDebuffColorConfig()
         -- If the framework handler is registered, let it handle this
         if AuraUI and AuraUI._specSwitchRegistry
            and #AuraUI._specSwitchRegistry > 0 then
@@ -10898,6 +11102,7 @@ function npAddon:OnInitialize()
     ENP.db = AuraUI.Lite.NewDB("AuraUINameplatesDB", { profile = defaults })
     p = ENP.db.profile
     ns.db = ENP.db
+    ns.NP_UpdateDebuffColorConfig()
     -- Non-Target Opacity: derive the cached value at login (no plates exist yet,
     -- so the apply loop no-ops; SetUnit fades new plates as they spawn).
     if ns.NT_RefreshSetting then ns.NT_RefreshSetting() end
@@ -10912,6 +11117,7 @@ end
 function npAddon:OnEnable()
     -- Re-read profile: PreSeedSpecProfile may have re-pointed db.profile between OnInitialize and OnEnable.
     p = ENP.db.profile
+    ns.NP_UpdateDebuffColorConfig()
     -- Class / Reaction slot and Threat % flags for the first plates (RefreshAllSettings keeps them after).
     ns.NP_RefreshSlotClassFlags()
     ns.NP_RefreshThreatPctFlag()

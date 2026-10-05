@@ -510,6 +510,48 @@ initFrame:SetScript("OnEvent", function(self)
                           AuraUIDB.tooltipHideHealthStrip = v
                           if AuraUI._applyTooltipHealthStrip then AuraUI._applyTooltipHealthStrip() end
                       end },
+                    { type="toggle", label="Show Player Buffs",
+                      tooltip="Shows player buffs as icons on the tooltip when hovering another player.",
+                      disabled=ttReskinOff, disabledTooltip="Reskin Tooltip",
+                      get=function()
+                          return AuraUIDB and AuraUIDB.tooltipPlayerBuffs or false
+                      end,
+                      set=function(v)
+                          if not AuraUIDB then AuraUIDB = {} end
+                          AuraUIDB.tooltipPlayerBuffs = v
+                      end },
+                    { type="dropdown", label="Buffs Position",
+                      disabled=function() return ttReskinOff() or not (AuraUIDB and AuraUIDB.tooltipPlayerBuffs) end,
+                      disabledTooltip="Show Player Buffs",
+                      values={ BOTTOM="Bottom", TOP="Top" },
+                      order={ "BOTTOM", "TOP" },
+                      get=function()
+                          return (AuraUIDB and AuraUIDB.tooltipPlayerBuffsPosition) or "BOTTOM"
+                      end,
+                      set=function(v)
+                          if not AuraUIDB then AuraUIDB = {} end
+                          AuraUIDB.tooltipPlayerBuffsPosition = v
+                      end },
+                    { type="slider", label="Buff Icon Size", min=12, max=32, step=1,
+                      disabled=function() return ttReskinOff() or not (AuraUIDB and AuraUIDB.tooltipPlayerBuffs) end,
+                      disabledTooltip="Show Player Buffs",
+                      get=function()
+                          return (AuraUIDB and AuraUIDB.tooltipPlayerBuffsSize) or 18
+                      end,
+                      set=function(v)
+                          if not AuraUIDB then AuraUIDB = {} end
+                          AuraUIDB.tooltipPlayerBuffsSize = v
+                      end },
+                    { type="slider", label="Buffs Per Row", min=4, max=12, step=1,
+                      disabled=function() return ttReskinOff() or not (AuraUIDB and AuraUIDB.tooltipPlayerBuffs) end,
+                      disabledTooltip="Show Player Buffs",
+                      get=function()
+                          return (AuraUIDB and AuraUIDB.tooltipPlayerBuffsPerRow) or 6
+                      end,
+                      set=function(v)
+                          if not AuraUIDB then AuraUIDB = {} end
+                          AuraUIDB.tooltipPlayerBuffsPerRow = v
+                      end },
                 },
             })
         end

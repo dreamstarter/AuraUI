@@ -981,6 +981,154 @@ end
         end
     end
 
+    local _ttBuffFrame = nil
+    local _ttBuffButtons = {}
+
+    local function _getOrCreateBuffFrame()
+        if not _ttBuffFrame then
+            _ttBuffFrame = CreateFrame("Frame", "AuraUI_TooltipBuffs", _GameTooltip)
+            _ttBuffFrame:SetFrameStrata("TOOLTIP")
+            _ttBuffFrame:SetClampedToScreen(true)
+            _ttBuffFrame:Hide()
+        end
+        return _ttBuffFrame
+    end
+
+    local function _getOrCreateBuffButton(index)
+        local btn = _ttBuffButtons[index]
+        if not btn then
+            local parent = _getOrCreateBuffFrame()
+            btn = CreateFrame("Frame", nil, parent)
+            btn:EnableMouse(false)
+
+            local icon = btn:CreateTexture(nil, "ARTWORK")
+            icon:SetAllPoints()
+            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            btn.icon = icon
+
+            -- 1px clean dark border
+            local bdr = btn:CreateTexture(nil, "BACKGROUND")
+            bdr:SetPoint("TOPLEFT", -1, 1)
+            bdr:SetPoint("BOTTOMRIGHT", 1, -1)
+            bdr:SetColorTexture(0, 0, 0, 1)
+            btn.border = bdr
+
+            local count = btn:CreateFontString(nil, "OVERLAY")
+            local fp = (AuraUI and AuraUI.GetFontPath and AuraUI.GetFontPath("tooltips")) or "Fonts\\FRIZQT__.TTF"
+            count:SetFont(fp, 10, "OUTLINE")
+            count:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 1, -1)
+            count:SetTextColor(1, 1, 1, 1)
+            btn.count = count
+
+            _ttBuffButtons[index] = btn
+        end
+        return btn
+    end
+
+    local function _ttHidePlayerBuffs()
+        if _ttBuffFrame then
+            _ttBuffFrame:Hide()
+            for i = 1, #_ttBuffButtons do
+                _ttBuffButtons[i]:Hide()
+            end
+        end
+    end
+
+    local function _ttUpdatePlayerBuffs(tt, unit)
+        local db = AuraUIDB
+        if not db or not db.tooltipPlayerBuffs then
+            _ttHidePlayerBuffs()
+            return
+        end
+        if not unit or not UnitIsPlayer(unit) then
+            _ttHidePlayerBuffs()
+            return
+        end
+
+        local size = db.tooltipPlayerBuffsSize or 18
+        local perRow = db.tooltipPlayerBuffsPerRow or 6
+        local pos = db.tooltipPlayerBuffsPosition or "BOTTOM"
+        local maxBuffs = db.tooltipPlayerBuffsMax or 16
+
+        local buffs = {}
+        local i = 1
+        while i <= 40 and #buffs < maxBuffs do
+            local name, icon, count
+            if C_UnitAuras and C_UnitAuras.GetBuffDataByIndex then
+                local data = C_UnitAuras.GetBuffDataByIndex(unit, i)
+                if not data then break end
+                name = data.name
+                icon = data.icon
+                count = data.applications or data.charges or 0
+            elseif UnitBuff then
+                local n, ic, cnt = UnitBuff(unit, i)
+                if not n then break end
+                name = n
+                icon = ic
+                count = cnt or 0
+            else
+                break
+            end
+
+            if icon then
+                buffs[#buffs + 1] = { icon = icon, count = count }
+            end
+            i = i + 1
+        end
+
+        local numBuffs = #buffs
+        if numBuffs == 0 then
+            _ttHidePlayerBuffs()
+            return
+        end
+
+        local bf = _getOrCreateBuffFrame()
+        bf:SetParent(tt)
+        bf:SetFrameLevel(tt:GetFrameLevel() + 2)
+        bf:ClearAllPoints()
+
+        local spacing = 2
+        local cols = math.min(numBuffs, perRow)
+        local rows = math.ceil(numBuffs / perRow)
+        local totalW = cols * size + (cols - 1) * spacing
+        local totalH = rows * size + (rows - 1) * spacing
+        bf:SetSize(totalW, totalH)
+
+        if pos == "TOP" then
+            bf:SetPoint("BOTTOMLEFT", tt, "TOPLEFT", 0, 4)
+        else
+            bf:SetPoint("TOPLEFT", tt, "BOTTOMLEFT", 0, -4)
+        end
+
+        for idx = 1, numBuffs do
+            local b = buffs[idx]
+            local btn = _getOrCreateBuffButton(idx)
+            btn:SetSize(size, size)
+            btn.icon:SetTexture(b.icon)
+            if b.count and b.count > 1 then
+                btn.count:SetText(tostring(b.count))
+                btn.count:Show()
+            else
+                btn.count:Hide()
+            end
+
+            local col = (idx - 1) % perRow
+            local row = math.floor((idx - 1) / perRow)
+            local x = col * (size + spacing)
+            local y = -(row * (size + spacing))
+
+            btn:ClearAllPoints()
+            btn:SetPoint("TOPLEFT", bf, "TOPLEFT", x, y)
+            btn:Show()
+        end
+
+        for idx = numBuffs + 1, #_ttBuffButtons do
+            _ttBuffButtons[idx]:Hide()
+        end
+
+        bf:Show()
+    end
+
     local function _ttUnitColor(tt, data)
         if tt ~= _GameTooltip or tt:IsForbidden() then return end
         local nLinesBefore = tt.NumLines and tt:NumLines() or 0
@@ -990,7 +1138,10 @@ end
         _tipShownGUID = guid
         local ttd = GetFFD(tt)
         ttd.ilvlShown = false
-        if not guid then return end
+        if not guid then
+            _ttHidePlayerBuffs()
+            return
+        end
         -- Class and plain name from the authoritative GUID, with a live-token fallback. Non-players get no additions (GetPlayerInfoByGUID returns no class for non-player GUIDs, matching stock hover).
         local classFile, pname, prealm
         if GetPlayerInfoByGUID then
@@ -1004,6 +1155,7 @@ end
                 -- No class additions on non-players, but Targeting still applies (checking a boss's target is the core case).
                 _ttTargetLine(tt, unit)
                 _ttFonts(tt, nLinesBefore)
+                _ttHidePlayerBuffs()
                 return
             end
             local _, cf = UnitClass(unit)
@@ -1012,7 +1164,10 @@ end
                 pname, prealm = UnitName(unit)
             end
         end
-        if not classFile then return end
+        if not classFile then
+            _ttHidePlayerBuffs()
+            return
+        end
         if not _nameL1 then _nameL1 = _G.GameTooltipTextLeft1 end
         if not _nameL1 then return end
         local db = AuraUIDB
@@ -1135,6 +1290,8 @@ end
                 ttd.ilvlShown = true
             end
         end
+        -- Player Buffs on Tooltips
+        _ttUpdatePlayerBuffs(tt, unit)
         -- Re-apply our font to lines added after OnShow.
         _ttFonts(tt, nLinesBefore)
     end
@@ -1180,7 +1337,13 @@ end
         if _ttDataInited then return end
         _ttDataInited = true
         -- Clear the recorded identity on hide so a late inspect result can never append to a closed/switched tooltip. HookScript (never SetScript) keeps the secure OnHide handler intact.
-        _GameTooltip:HookScript("OnHide", function() _tipShownGUID = nil end)
+        _GameTooltip:HookScript("OnHide", function()
+            _tipShownGUID = nil
+            _ttHidePlayerBuffs()
+        end)
+        _GameTooltip:HookScript("OnTooltipCleared", function()
+            _ttHidePlayerBuffs()
+        end)
         -- Item level inspect pacing starts at login, so the request history from other
         -- addons is already being tracked before the first hover.
         if not AuraUIDB or AuraUIDB.tooltipItemLevel ~= false then _insp.Activate() end

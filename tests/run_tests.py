@@ -162,6 +162,26 @@ check("AUI_LootFeed" in lf_code and "StartLoopPreview" in lf_code and "ApplyRowS
 loot_options_file = "AuraUIOptions/AUI_ForeverEssentials_Loot_Options.lua"
 check(os.path.exists(loot_options_file), "Forever Essentials Loot options page exists")
 
+print("\n8. Verifying Group B Upstream Sync Features...")
+with open("AuraUINameplates/AuraUINameplates.lua", "r", encoding="utf-8") as f:
+    np_code = f.read()
+check("debuffColoringEnabled = false" in np_code and "debuffColorMode = \"health\"" in np_code, "Nameplates debuff coloring defaults exist")
+check("debuffBorderThicken = true" in np_code and "debuffThickenAmount = 1" in np_code, "Nameplates debuff border thicken defaults exist")
+check("NP_UpdateDebuffColorConfig" in np_code and "NP_ScanUnitDebuffColor" in np_code, "Nameplates debuff scanning and config compiler active")
+check("UNIT_AURA" in np_code and "_debuffBorderActive" in np_code, "Nameplates live UNIT_AURA and border thickening active")
+
+with open("AuraUIOptions/AUI_Nameplates_Options.lua", "r", encoding="utf-8") as f:
+    np_opt_code = f.read()
+check("Debuff Based Coloring" in np_opt_code and "RefreshDebuffPlates" in np_opt_code, "Nameplates debuff coloring options UI active")
+
+with open("AuraUIBlizzardSkin/AuraUIBlizzardSkin.lua", "r", encoding="utf-8") as f:
+    bs_code = f.read()
+check("tooltipPlayerBuffs" in bs_code and "_ttUpdatePlayerBuffs" in bs_code, "BlizzardSkin player buffs on tooltip logic active")
+
+with open("AuraUIOptions/AUI_BlizzardSkin_Options.lua", "r", encoding="utf-8") as f:
+    bs_opt_code = f.read()
+check("Show Player Buffs" in bs_opt_code and "Buffs Position" in bs_opt_code, "BlizzardSkin player buffs options active")
+
 print("\n==================================================================")
 print(f"Diagnostic Results: {passed} Passed, {failed} Failed")
 print("==================================================================")
@@ -171,3 +191,4 @@ if failed > 0:
 else:
     print("[SUCCESS] All diagnostics passed with 100% compliance!")
     sys.exit(0)
+
