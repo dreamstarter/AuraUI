@@ -1323,6 +1323,34 @@ qolFrame:SetScript("OnEvent", function(self)
     end
 
     ---------------------------------------------------------------------------
+    --  Auto Select Single Gossip
+    ---------------------------------------------------------------------------
+    do
+        local gossipFrame = CreateFrame("Frame")
+        gossipFrame:RegisterEvent("GOSSIP_SHOW")
+        gossipFrame:SetScript("OnEvent", function()
+            if not (AuraUIDB and AuraUIDB.autoSelectSingleGossip ~= false) then return end
+            if InCombatLockdown() or IsShiftKeyDown() then return end
+
+            local numAvail = (C_GossipInfo and C_GossipInfo.GetNumAvailableQuests and C_GossipInfo.GetNumAvailableQuests()) or 0
+            local numActive = (C_GossipInfo and C_GossipInfo.GetNumActiveQuests and C_GossipInfo.GetNumActiveQuests()) or 0
+            if numAvail > 0 or numActive > 0 then return end
+
+            local options = C_GossipInfo and C_GossipInfo.GetOptions and C_GossipInfo.GetOptions()
+            if options and #options == 1 then
+                local opt = options[1]
+                if opt and opt.gossipOptionID then
+                    C_GossipInfo.SelectOption(opt.gossipOptionID)
+                end
+            elseif GetNumGossipOptions and GetNumGossipOptions() == 1 then
+                if SelectGossipOption then
+                    SelectGossipOption(1)
+                end
+            end
+        end)
+    end
+
+    ---------------------------------------------------------------------------
     --  Quick Signup (double-click to sign up; not on WoW Forever: Blizzard's
     --  premade-group list does not load there, so the block and its options
     --  row do not exist)

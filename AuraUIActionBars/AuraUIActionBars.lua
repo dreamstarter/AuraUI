@@ -15922,6 +15922,8 @@ local DATA_BAR_COLORS = {
     xpRested   = { r = 0.00, g = 0.44, b = 0.87 },  -- shaman blue (XP when rested)
     xpNoRest   = { r = 0.60, g = 0.40, b = 0.85 },  -- purple (XP when no rested)
     xpRestedBG = { r = 0.15, g = 0.30, b = 0.60 },  -- dark blue (rested overlay)
+    xpQuestComplete   = { r = 0.00, g = 0.75, b = 0.35 },  -- green (completed quest XP)
+    xpQuestIncomplete = { r = 0.85, g = 0.70, b = 0.15 },  -- gold (active quest XP)
     favor = { r = 0.85, g = 0.64, b = 0.22 },   -- warm gold (house favor)
     rep = {
         [1] = { r = 0.80, g = 0.20, b = 0.20 },  -- Hated
@@ -16059,7 +16061,15 @@ local function ApplyDataBarLayout(barKey)
     frame._bar:GetStatusBarTexture():SetDrawLayer("ARTWORK", 4)
     if frame._restedBar then
         frame._restedBar:SetStatusBarTexture(texPath)
-        frame._restedBar:GetStatusBarTexture():SetDrawLayer("ARTWORK", 2)
+        frame._restedBar:GetStatusBarTexture():SetDrawLayer("ARTWORK", 1)
+    end
+    if frame._questIncompleteBar then
+        frame._questIncompleteBar:SetStatusBarTexture(texPath)
+        frame._questIncompleteBar:GetStatusBarTexture():SetDrawLayer("ARTWORK", 2)
+    end
+    if frame._questCompleteBar then
+        frame._questCompleteBar:SetStatusBarTexture(texPath)
+        frame._questCompleteBar:GetStatusBarTexture():SetDrawLayer("ARTWORK", 3)
     end
 
     frame._bar:SetOrientation(orient)
@@ -16067,6 +16077,14 @@ local function ApplyDataBarLayout(barKey)
     if frame._restedBar then
         frame._restedBar:SetOrientation(orient)
         frame._restedBar:SetRotatesTexture(orient ~= "HORIZONTAL")
+    end
+    if frame._questIncompleteBar then
+        frame._questIncompleteBar:SetOrientation(orient)
+        frame._questIncompleteBar:SetRotatesTexture(orient ~= "HORIZONTAL")
+    end
+    if frame._questCompleteBar then
+        frame._questCompleteBar:SetOrientation(orient)
+        frame._questCompleteBar:SetRotatesTexture(orient ~= "HORIZONTAL")
     end
 
     -- Per-bar Text Size (default 9) + text X/Y offsets (default 0,0).
@@ -16213,6 +16231,45 @@ function ns.XPBarAtMaxLevel()
     return (maxLevel and level >= maxLevel) or false
 end
 
+local function GetQuestLogXP()
+    local completeXP = 0
+    local incompleteXP = 0
+    if C_QuestLog and C_QuestLog.GetNumQuestLogEntries then
+        local num = C_QuestLog.GetNumQuestLogEntries() or 0
+        for i = 1, num do
+            local info = C_QuestLog.GetInfo and C_QuestLog.GetInfo(i)
+            if info and not info.isHeader and info.questID and not info.isHidden then
+                local xp = (GetQuestLogRewardXP and GetQuestLogRewardXP(info.questID)) or 0
+                if xp > 0 then
+                    local isComplete = (C_QuestLog.IsComplete and C_QuestLog.IsComplete(info.questID))
+                        or (GetQuestLogTitle and select(6, GetQuestLogTitle(i)) == 1)
+                    if isComplete then
+                        completeXP = completeXP + xp
+                    else
+                        incompleteXP = incompleteXP + xp
+                    end
+                end
+            end
+        end
+    elseif GetNumQuestLogEntries then
+        local num = GetNumQuestLogEntries() or 0
+        for i = 1, num do
+            local _, _, _, isHeader, isCollapsed, isComplete, _, questID = GetQuestLogTitle(i)
+            if not isHeader and questID then
+                local xp = (GetQuestLogRewardXP and GetQuestLogRewardXP(questID)) or 0
+                if xp > 0 then
+                    if isComplete == 1 or isComplete == true then
+                        completeXP = completeXP + xp
+                    else
+                        incompleteXP = incompleteXP + xp
+                    end
+                end
+            end
+        end
+    end
+    return completeXP, incompleteXP
+end
+
 local function UpdateXPBar()
     local frame, s = EAB_VTABLE.ExtraBars.BeginManagedDataBarUpdate("XPBar")
     if not frame then return end
@@ -16235,6 +16292,36 @@ local function UpdateXPBar()
     bar:SetMinMaxValues(0, maxXP)
     bar:SetValue(currentXP)
 
+    local config = (EAB and EAB.db and EAB.db.profile and EAB.db.profile.bars and EAB.db.profile.bars["XPBar"]) or {}
+    local showQuestXP = config.showQuestXP
+    local completeXP, incompleteXP = 0, 0
+    if showQuestXP then
+        completeXP, incompleteXP = GetQuestLogXP()
+    end
+    frame._tipCompleteXP = completeXP
+    frame._tipIncompleteXP = incompleteXP
+
+    -- Quest XP overlays (completed quests in green, incomplete in gold)
+    local completeBar = frame._questCompleteBar
+    local incompleteBar = frame._questIncompleteBar
+    if showQuestXP and completeXP > 0 and completeBar then
+        completeBar:SetMinMaxValues(0, maxXP)
+        completeBar:SetValue(min(currentXP + completeXP, maxXP))
+        completeBar:SetStatusBarColor(DATA_BAR_COLORS.xpQuestComplete.r, DATA_BAR_COLORS.xpQuestComplete.g, DATA_BAR_COLORS.xpQuestComplete.b, 0.8)
+        completeBar:Show()
+    elseif completeBar then
+        completeBar:Hide()
+    end
+
+    if showQuestXP and incompleteXP > 0 and incompleteBar then
+        incompleteBar:SetMinMaxValues(0, maxXP)
+        incompleteBar:SetValue(min(currentXP + completeXP + incompleteXP, maxXP))
+        incompleteBar:SetStatusBarColor(DATA_BAR_COLORS.xpQuestIncomplete.r, DATA_BAR_COLORS.xpQuestIncomplete.g, DATA_BAR_COLORS.xpQuestIncomplete.b, 0.6)
+        incompleteBar:Show()
+    elseif incompleteBar then
+        incompleteBar:Hide()
+    end
+
     -- Rested XP overlay
     local restedBar = frame._restedBar
     if restedXP > 0 then
@@ -16248,7 +16335,6 @@ local function UpdateXPBar()
         restedBar:Hide()
     end
 
-    local config = (EAB and EAB.db and EAB.db.profile and EAB.db.profile.bars and EAB.db.profile.bars["XPBar"]) or {}
     local showLevel = config.showLevel
     local showRawValues = config.showRawValues
 
@@ -16285,10 +16371,11 @@ local function CreateXPBar()
     local holder = CreateDataBarFrame("XPBar", UpdateXPBar)
     holder:SetPoint("TOP", UIParent, "TOP", 0, -100)
 
-    -- Rested XP overlay bar (behind main bar)
+    local PP = AuraUI and AuraUI.PP
+
+    -- Rested XP overlay bar (sub-level 1)
     local restedBar = CreateFrame("StatusBar", "AuraEAB_XPBar_Rested", holder)
     restedBar:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
-    local PP = AuraUI and AuraUI.PP
     if PP then
         PP.SetInside(restedBar, holder, 1, 1)
     else
@@ -16297,9 +16384,39 @@ local function CreateXPBar()
     end
     restedBar:SetMinMaxValues(0, 1)
     restedBar:SetValue(0)
-    restedBar:GetStatusBarTexture():SetDrawLayer("ARTWORK", 2)
+    restedBar:GetStatusBarTexture():SetDrawLayer("ARTWORK", 1)
     restedBar:Hide()
     holder._restedBar = restedBar
+
+    -- Incomplete quest XP overlay bar (sub-level 2)
+    local incompleteBar = CreateFrame("StatusBar", "AuraEAB_XPBar_Incomplete", holder)
+    incompleteBar:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
+    if PP then
+        PP.SetInside(incompleteBar, holder, 1, 1)
+    else
+        incompleteBar:SetPoint("TOPLEFT", 1, -1)
+        incompleteBar:SetPoint("BOTTOMRIGHT", -1, 1)
+    end
+    incompleteBar:SetMinMaxValues(0, 1)
+    incompleteBar:SetValue(0)
+    incompleteBar:GetStatusBarTexture():SetDrawLayer("ARTWORK", 2)
+    incompleteBar:Hide()
+    holder._questIncompleteBar = incompleteBar
+
+    -- Completed quest XP overlay bar (sub-level 3)
+    local completeBar = CreateFrame("StatusBar", "AuraEAB_XPBar_Complete", holder)
+    completeBar:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
+    if PP then
+        PP.SetInside(completeBar, holder, 1, 1)
+    else
+        completeBar:SetPoint("TOPLEFT", 1, -1)
+        completeBar:SetPoint("BOTTOMRIGHT", -1, 1)
+    end
+    completeBar:SetMinMaxValues(0, 1)
+    completeBar:SetValue(0)
+    completeBar:GetStatusBarTexture():SetDrawLayer("ARTWORK", 3)
+    completeBar:Hide()
+    holder._questCompleteBar = completeBar
 
     -- Tooltip. Click Through suppresses it: on a mouseover bar the holder keeps mouse
     -- motion only so the hover fade can see the cursor.
@@ -16323,6 +16440,14 @@ local function CreateXPBar()
         if restedXP > 0 then
             GameTooltip:AddDoubleLine(AuraUI.L("Rested"), format("+%s (%.1f%%)", BreakUpLargeNumbers(restedXP), (restedXP / maxXP) * 100), 1, 1, 1, 1, 1, 1)
         end
+        local cXP = self._tipCompleteXP or 0
+        local iXP = self._tipIncompleteXP or 0
+        if cXP > 0 then
+            GameTooltip:AddDoubleLine(AuraUI.L("Completed Quests"), format("+%s (%.1f%%)", BreakUpLargeNumbers(cXP), (cXP / maxXP) * 100), 0.0, 0.75, 0.35, 1, 1, 1)
+        end
+        if iXP > 0 then
+            GameTooltip:AddDoubleLine(AuraUI.L("Active Quests"), format("+%s (%.1f%%)", BreakUpLargeNumbers(iXP), (iXP / maxXP) * 100), 0.85, 0.70, 0.15, 1, 1, 1)
+        end
         GameTooltip:Show()
     end)
     holder:SetScript("OnLeave", function(self) if GameTooltip:IsOwned(self) then GameTooltip:Hide() end end)
@@ -16333,6 +16458,9 @@ local function CreateXPBar()
     evFrame:RegisterEvent("PLAYER_LEVEL_UP")
     evFrame:RegisterEvent("UPDATE_EXHAUSTION")
     evFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    evFrame:RegisterEvent("QUEST_LOG_UPDATE")
+    evFrame:RegisterEvent("UNIT_QUEST_LOG_CHANGED")
+    evFrame:RegisterEvent("QUEST_WATCH_UPDATE")
     evFrame:SetScript("OnEvent", UpdateXPBar)
 
     ApplyDataBarLayout("XPBar")

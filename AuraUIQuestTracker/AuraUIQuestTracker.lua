@@ -68,6 +68,7 @@ local QT_DEFAULTS = {
 
             -- QoL
             autoAccept           = false,
+            autoAcceptIgnoreLowLevel = false,
             autoAcceptPreventMulti = true,
             autoAcceptShiftSkip  = true,
             autoTurnIn           = false,

@@ -78,20 +78,28 @@ local function InstallAutoQuests()
                     if Cfg("autoAcceptShiftSkip") and IsShiftKeyDown() then return end
                     local available = C_GossipInfo.GetAvailableQuests()
                     if available and #available > 0 then
-                        local npcGUID = UnitGUID("npc")
-                        if Cfg("autoAcceptPreventMulti") then
-                            if #available > 1 then
-                                autoPreventNPCGUID = npcGUID
+                        local validQuests = {}
+                        for _, q in ipairs(available) do
+                            if not (Cfg("autoAcceptIgnoreLowLevel") and q.isTrivial) then
+                                table.insert(validQuests, q)
                             end
-                            if autoPreventNPCGUID == npcGUID then
-                                -- do nothing; let user pick manually
-                            elseif available[1].questID then
-                                C_GossipInfo.SelectAvailableQuest(available[1].questID)
+                        end
+                        if #validQuests > 0 then
+                            local npcGUID = UnitGUID("npc")
+                            if Cfg("autoAcceptPreventMulti") then
+                                if #validQuests > 1 then
+                                    autoPreventNPCGUID = npcGUID
+                                end
+                                if autoPreventNPCGUID == npcGUID then
+                                    -- do nothing; let user pick manually
+                                elseif validQuests[1].questID then
+                                    C_GossipInfo.SelectAvailableQuest(validQuests[1].questID)
+                                    return
+                                end
+                            elseif validQuests[1].questID then
+                                C_GossipInfo.SelectAvailableQuest(validQuests[1].questID)
                                 return
                             end
-                        elseif available[1].questID then
-                            C_GossipInfo.SelectAvailableQuest(available[1].questID)
-                            return
                         end
                     end
                 end
@@ -110,6 +118,14 @@ local function InstallAutoQuests()
         if event == "QUEST_DETAIL" then
             if not Cfg("autoAccept") then return end
             if Cfg("autoAcceptShiftSkip") and IsShiftKeyDown() then return end
+            if Cfg("autoAcceptIgnoreLowLevel") then
+                local isTrivial = (QuestIsTrivial and QuestIsTrivial())
+                if not isTrivial and C_QuestLog and C_QuestLog.IsQuestTrivial and GetQuestID then
+                    local qid = GetQuestID()
+                    if qid then isTrivial = C_QuestLog.IsQuestTrivial(qid) end
+                end
+                if isTrivial then return end
+            end
             AcceptQuest()
         elseif event == "QUEST_COMPLETE" then
             if not Cfg("autoTurnIn") then return end

@@ -136,6 +136,32 @@ with open("AuraUIForeverEssentials/AuraUIForeverEssentials_FlightTimer.lua", "r"
     ft_code = f.read()
 check("StartLoopPreview" in ft_code and "StopLoopPreview" in ft_code, "Flight timer loop preview API active")
 
+print("\n7. Verifying Group A Upstream Sync Features...")
+with open("AuraUIQuestTracker/AuraUIQuestTracker.lua", "r", encoding="utf-8") as f:
+    qt_code = f.read()
+check("autoAcceptIgnoreLowLevel = false" in qt_code, "Quest Tracker autoAcceptIgnoreLowLevel default exists")
+
+with open("AuraUIQuestTracker/AuraUIQuestTracker_QoL.lua", "r", encoding="utf-8") as f:
+    qt_qol = f.read()
+check("autoAcceptIgnoreLowLevel" in qt_qol and "QuestIsTrivial" in qt_qol, "Quest Tracker ignore low level quest check active")
+
+with open("AuraUIQoL/AuraUIQoL.lua", "r", encoding="utf-8") as f:
+    qol_code = f.read()
+check("autoSelectSingleGossip" in qol_code and "SelectGossipOption" in qol_code, "QoL auto select single gossip handler active")
+
+with open("AuraUIActionBars/AuraUIActionBars.lua", "r", encoding="utf-8") as f:
+    ab_code2 = f.read()
+check("_questCompleteBar" in ab_code2 and "_questIncompleteBar" in ab_code2 and "GetQuestLogXP" in ab_code2, "Action Bars Quest XP overlay active")
+
+loot_feed_file = "AuraUIForeverEssentials/AuraUIForeverEssentials_LootFeed.lua"
+check(os.path.exists(loot_feed_file), "Forever Essentials Loot Feed module exists")
+with open(loot_feed_file, "r", encoding="utf-8") as f:
+    lf_code = f.read()
+check("AUI_LootFeed" in lf_code and "StartLoopPreview" in lf_code and "ApplyRowStyle" in lf_code, "Loot Feed styles and preview loop active")
+
+loot_options_file = "AuraUIOptions/AUI_ForeverEssentials_Loot_Options.lua"
+check(os.path.exists(loot_options_file), "Forever Essentials Loot options page exists")
+
 print("\n==================================================================")
 print(f"Diagnostic Results: {passed} Passed, {failed} Failed")
 print("==================================================================")

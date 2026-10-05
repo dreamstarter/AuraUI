@@ -28,7 +28,7 @@ _G._AUI_BuildForeverGeneralPage = function(pageName, parent, yOffset)
                   AuraUI._AutoUprank.SetEnabled(v)
               end
           end },
-        { type = "label", text = "" }
+        AuraUI.BlankRowCfg()
     );  y = y - h
 
     return math.abs(y)

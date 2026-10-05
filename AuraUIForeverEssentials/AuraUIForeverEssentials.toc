@@ -23,3 +23,6 @@ AuraUIForeverEssentials_ThreatMeter.lua
 
 # Spells (auto uprank)
 AuraUIForeverEssentials_AutoUprank.lua
+
+# Loot (loot feed)
+AuraUIForeverEssentials_LootFeed.lua

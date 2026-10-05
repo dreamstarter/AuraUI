@@ -825,6 +825,20 @@ initFrame:SetScript("OnEvent", function(self)
             })
         end
 
+        _, h = W:DualRow(parent, y,
+            { type="toggle", text="Auto Select Single Gossip",
+              tooltip="Talking to an NPC with only one dialog option picks it for you, unless they have a quest for you.",
+              getValue=function()
+                  if not AuraUIDB then return true end
+                  return AuraUIDB.autoSelectSingleGossip ~= false
+              end,
+              setValue=function(v)
+                  if not AuraUIDB then AuraUIDB = {} end
+                  AuraUIDB.autoSelectSingleGossip = v
+              end },
+            AuraUI.BlankRowCfg()
+        );  y = y - h
+
         _, h = W:Spacer(parent, y, 20);  y = y - h
 
         ---------------------------------------------------------------------------
@@ -2316,6 +2330,7 @@ initFrame:SetScript("OnEvent", function(self)
                 AuraUIDB.skipCinematics = false
                 AuraUIDB.skipCinematicsAuto = false
                 AuraUIDB.autoFillDelete = false
+                AuraUIDB.autoSelectSingleGossip = nil
                 AuraUIDB.autoInsertKeystone = false
                 AuraUIDB.instanceResetAnnounce = false
                 AuraUIDB.instanceResetAnnounceMsg = ""

@@ -31,6 +31,7 @@ AUI_ForeverEssentials_Options.lua
 AUI_ForeverEssentials_General_Options.lua
 AUI_ForeverEssentials_Travel_Options.lua
 AUI_ForeverEssentials_Threat_Options.lua
+AUI_ForeverEssentials_Loot_Options.lua
 AUI_Friends_Options.lua
 AUI_Minimap_Options.lua
 AUI_MythicTimer_Options.lua

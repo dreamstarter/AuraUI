@@ -373,6 +373,10 @@ initFrame:SetScript("OnEvent", function(self)
         AuraUI.BuildInlineCog(row._leftRegion, {
             title = "Auto Accept Settings",
             rows = {
+                { type="toggle", label="Ignore Low Level Quests",
+                  tooltip="Auto Accept can leave low level quests for you to pick up yourself.",
+                  get=function() return Cfg("autoAcceptIgnoreLowLevel") == true end,
+                  set=function(v) Set("autoAcceptIgnoreLowLevel", v) end },
                 { type="toggle", label="Prevent Multi Quest Accept",
                   get=function() return Cfg("autoAcceptPreventMulti") ~= false end,
                   set=function(v) Set("autoAcceptPreventMulti", v) end },

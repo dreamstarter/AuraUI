@@ -13,6 +13,7 @@ if not AuraUI._ModuleNS["AuraUIForeverEssentials"] then return end  -- module di
 local PAGE_GENERAL = "General"
 local PAGE_TRAVEL = "Travel"
 local PAGE_THREAT = "Threat"
+local PAGE_LOOT = "Loot"
 
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
@@ -22,8 +23,8 @@ initFrame:SetScript("OnEvent", function(self)
     AuraUI:RegisterModule("AuraUIForeverEssentials", {
         title       = "Forever Essentials",
         description = "Essential tools for WoW Forever.",
-        pages       = { PAGE_GENERAL, PAGE_TRAVEL, PAGE_THREAT },
-        searchTerms = { "flight timer", "flight path", "threat", "threat meter", "aggro", "auto uprank", "uprank", "spell rank", "spells" },
+        pages       = { PAGE_GENERAL, PAGE_TRAVEL, PAGE_THREAT, PAGE_LOOT },
+        searchTerms = { "flight timer", "flight path", "threat", "threat meter", "aggro", "auto uprank", "uprank", "spell rank", "spells", "loot", "loot feed", "accent bar" },
         buildPage   = function(pageName, parent, yOffset)
             if pageName == PAGE_GENERAL and _G._AUI_BuildForeverGeneralPage then
                 return _G._AUI_BuildForeverGeneralPage(pageName, parent, yOffset)
@@ -33,6 +34,9 @@ initFrame:SetScript("OnEvent", function(self)
             end
             if pageName == PAGE_THREAT and _G._AUI_BuildThreatMeterPage then
                 return _G._AUI_BuildThreatMeterPage(pageName, parent, yOffset)
+            end
+            if pageName == PAGE_LOOT and _G._AUI_BuildLootFeedPage then
+                return _G._AUI_BuildLootFeedPage(pageName, parent, yOffset)
             end
         end,
         -- The Threat page's preview lives in the content header; declaring its
@@ -45,9 +49,11 @@ initFrame:SetScript("OnEvent", function(self)
                 AuraUIDB.autoUprank = nil
                 AuraUIDB.flightTimer = nil
                 AuraUIDB.threatMeter = nil
+                AuraUIDB.lootFeed = nil
                 if AuraUIDB.unlockAnchors then
                     AuraUIDB.unlockAnchors.AUI_FlightTimer = nil
                     AuraUIDB.unlockAnchors.AUI_ThreatMeter = nil
+                    AuraUIDB.unlockAnchors.AUI_LootFeed = nil
                 end
             end
             local FT = AuraUI._FlightTimer
@@ -61,6 +67,11 @@ initFrame:SetScript("OnEvent", function(self)
                 TM.Apply()
                 TM.ApplyStyle()
                 TM.ApplyPosition()
+            end
+            local module = AuraUI._ModuleNS["AuraUIForeverEssentials"]
+            local LF = module and module.LootFeed
+            if LF and LF.Apply then
+                LF.Apply()
             end
             AuraUI:InvalidatePageCache()
         end,

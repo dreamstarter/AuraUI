@@ -1871,6 +1871,14 @@ initFrame:SetScript("OnEvent", function(self)
                         set=function(v)
                             EAB.db.profile.bars["XPBar"].showLevel = v
                         end },
+                    { type="toggle", label="Quest XP Overlay",
+                        tooltip="Show quest XP from your quest log ahead of the XP bar fill (completed quests in green, active quests in gold).",
+                        get=function() return EAB and EAB.db and EAB.db.profile and EAB.db.profile.bars and EAB.db.profile.bars["XPBar"] and EAB.db.profile.bars["XPBar"].showQuestXP end,
+                        set=function(v)
+                            EAB.db.profile.bars["XPBar"].showQuestXP = v
+                            local f = ns.dataBarFrames and ns.dataBarFrames["XPBar"]
+                            if f and f._updateFunc then f._updateFunc() end
+                        end },
                 },
             })
         end
