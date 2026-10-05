@@ -790,6 +790,20 @@ initFrame:SetScript("OnEvent", function(self)
                   setValue=function(v) db.profile.bagStackSplitter = v and true or false end }
             ); y = y - h
 
+            -- Allow Windows Over Bags
+            _, h = W:DualRow(parent, y,
+                { type="toggle", text="Allow Windows Over Bags",
+                  tooltip="Other windows, like the Auction House, Vendor or Crafting windows, can come in front of the bags. Turn this off to keep the bags on top.",
+                  getValue=function() return db.profile.bagAllowWindowsOver == true end,
+                  setValue=function(v)
+                      db.profile.bagAllowWindowsOver = v and true or false
+                      if _G.AUI_Bags and _G.AUI_Bags.ApplyBagFrameStrata then
+                          _G.AUI_Bags.ApplyBagFrameStrata()
+                      end
+                  end },
+                { type="label", text="" }
+            ); y = y - h
+
             -- Inline cog for Group Armory by Slot: compact layout
             if not AuraUI._prebuilding then
                 local function ArmoryCogState()

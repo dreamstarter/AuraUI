@@ -56,6 +56,7 @@ local BAGS_DEFAULTS = {
         bagDesaturateJunkItems = false,
         bagDisplayBindType    = false,
         bagBindTypeFontSize   = 11,
+        bagAllowWindowsOver   = false,
     },
 }
 local db = AuraUI.Lite.NewDB("AuraUIBagsDB", BAGS_DEFAULTS)

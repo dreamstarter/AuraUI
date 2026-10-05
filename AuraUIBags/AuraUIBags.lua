@@ -1034,6 +1034,21 @@ local function CreateHeader()
 
     local DoVisualSort  -- forward declaration
 
+    local function IsSpecialBag(bagID)
+        if not bagID or bagID == 0 then return false end
+        if C_Container and C_Container.GetContainerNumFreeSlots then
+            local _, bagFamily = C_Container.GetContainerNumFreeSlots(bagID)
+            if bagFamily and bagFamily ~= 0 then return true end
+        end
+        local invID = C_Container and C_Container.ContainerIDToInventoryID and C_Container.ContainerIDToInventoryID(bagID)
+        local link = invID and GetInventoryItemLink("player", invID)
+        if link and GetItemFamily then
+            local itemFamily = GetItemFamily(link)
+            if itemFamily and itemFamily ~= 0 then return true end
+        end
+        return false
+    end
+
     local function DoPhysicalSort()
         LockSort()
         AUI_Bags.refreshEnabled = false
@@ -1062,8 +1077,9 @@ local function CreateHeader()
             local function DoOnePass()
                 local stacks = {}  -- itemID -> { {bag,slot,count}, ... }
                 for bag = 0, 5 do
-                    local numSlots = C_Container.GetContainerNumSlots(bag)
-                    for slot = 1, numSlots do
+                    if not IsSpecialBag(bag) then
+                        local numSlots = C_Container.GetContainerNumSlots(bag)
+                        for slot = 1, numSlots do
                         local info = C_Container.GetContainerItemInfo(bag, slot)
                         if info and info.itemID and info.stackCount then
                             local maxStack = maxStackByID[info.itemID]
@@ -1081,6 +1097,7 @@ local function CreateHeader()
                                 }
                             end
                         end
+                    end
                     end
                 end
                 -- Emptiest partial merges into fullest, second-emptiest into
@@ -1152,21 +1169,23 @@ local function CreateHeader()
 
             local items = {}
             for bag = bagMin, bagMax do
-                local numSlots = C_Container.GetContainerNumSlots(bag)
-                for slot = 1, numSlots do
-                    total = total + 1
-                    sBag[total] = bag
-                    sSlot[total] = slot
-                    local info = C_Container.GetContainerItemInfo(bag, slot)
-                    if info then
-                        local link = C_Container.GetContainerItemLink(bag, slot)
-                        local key = link .. "\0" .. (info.stackCount or 0)
-                        sKey[total] = key
-                        sID[total] = info.itemID
-                        items[#items + 1] = {
-                            pos = total, bag = bag, slot = slot,
-                            info = info, itemLink = link, key = key,
-                        }
+                if not IsSpecialBag(bag) then
+                    local numSlots = C_Container.GetContainerNumSlots(bag)
+                    for slot = 1, numSlots do
+                        total = total + 1
+                        sBag[total] = bag
+                        sSlot[total] = slot
+                        local info = C_Container.GetContainerItemInfo(bag, slot)
+                        if info then
+                            local link = C_Container.GetContainerItemLink(bag, slot)
+                            local key = link .. "\0" .. (info.stackCount or 0)
+                            sKey[total] = key
+                            sID[total] = info.itemID
+                            items[#items + 1] = {
+                                pos = total, bag = bag, slot = slot,
+                                info = info, itemLink = link, key = key,
+                            }
+                        end
                     end
                 end
             end
@@ -1451,12 +1470,14 @@ local function CreateHeader()
         local slots = {}
         local items = {}
         for bag = 0, 4 do
-            local numSlots = C_Container.GetContainerNumSlots(bag)
-            for slot = 1, numSlots do
-                slots[#slots + 1] = { bag = bag, slot = slot }
-                local info = C_Container.GetContainerItemInfo(bag, slot)
-                if info then
-                    items[#items + 1] = { bag = bag, slot = slot, info = info }
+            if not IsSpecialBag(bag) then
+                local numSlots = C_Container.GetContainerNumSlots(bag)
+                for slot = 1, numSlots do
+                    slots[#slots + 1] = { bag = bag, slot = slot }
+                    local info = C_Container.GetContainerItemInfo(bag, slot)
+                    if info then
+                        items[#items + 1] = { bag = bag, slot = slot, info = info }
+                    end
                 end
             end
         end
@@ -7663,8 +7684,14 @@ local function StartAddon()
         AUI_Bags:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -50, 50)
     end
 
-    AUI_Bags:SetClampedToScreen(true)
-    AUI_Bags:SetFrameStrata("HIGH")
+    local function ApplyBagFrameStrata()
+        local strata = (BP().bagAllowWindowsOver == true) and "MEDIUM" or "HIGH"
+        if AUI_Bags then AUI_Bags:SetFrameStrata(strata) end
+        if AUI_BagsWindow then AUI_BagsWindow:SetFrameStrata(strata) end
+        if AUI_BagsReagent then AUI_BagsReagent:SetFrameStrata(strata) end
+    end
+    AUI_Bags.ApplyBagFrameStrata = ApplyBagFrameStrata
+    ApplyBagFrameStrata()
     AUI_Bags:SetFrameLevel(100)
     AUI_Bags:EnableMouse(true)
     AUI_Bags:SetMovable(true)
@@ -7882,6 +7909,7 @@ local function StartAddon()
     AUI_BagsReagent.bg:SetAllPoints()
     AUI_BagsReagent.bg:SetColorTexture(0.02, 0.02, 0.02, 0.95)
     if AUI and AUI.PanelPP then AUI.PanelPP.CreateBorder(AUI_BagsReagent, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7) end
+    ApplyBagFrameStrata()
 
     AUI_BagsReagent:RegisterEvent("BAG_UPDATE")
     AUI_BagsReagent:SetScript("OnEvent", function(self, event)
@@ -7972,7 +8000,17 @@ local function StartAddon()
     ToggleAllBags = SmartToggleBags
     -- Hook ToggleBackpack/ToggleBag via hooksecurefunc (avoids tainting the global)
     hooksecurefunc("ToggleBackpack", SmartToggleBags)
-    hooksecurefunc("ToggleBag", function() SmartToggleBags() end)
+    local KEYRING_ID = KEYRING_CONTAINER or -2
+    hooksecurefunc("ToggleBag", function(bagID)
+        if bagID == KEYRING_ID then
+            -- WoW Forever: Opening keyring should open KeyRingFrame, not AuraUI Main Bags
+            if ToggleKeyRing and not (ContainerFrameCombinedBags and ContainerFrameCombinedBags:IsShown()) then
+                ToggleKeyRing()
+                return
+            end
+        end
+        SmartToggleBags()
+    end)
 
     -- Hide Blizzard bag frames by reparenting to a hidden container (never write .Show/.Hide onto Blizzard frames -- causes taint).
     local _blizzBagHidden = CreateFrame("Frame")
@@ -8130,6 +8168,7 @@ local function StartAddon()
     end
 
     AUI_Bags:RegisterEvent("BAG_UPDATE")
+    AUI_Bags:RegisterEvent("BAG_CONTAINER_UPDATE")
     AUI_Bags:RegisterEvent("PLAYER_MONEY")
     AUI_Bags:RegisterEvent("ITEM_LOCK_CHANGED")
     AUI_Bags:RegisterEvent("CURRENCY_DISPLAY_UPDATE")
@@ -8180,6 +8219,8 @@ local function StartAddon()
         BANKFRAME_CLOSED      = { "bank",      false },
         GUILDBANKFRAME_OPENED = { "guildbank", true  },
         GUILDBANKFRAME_CLOSED = { "guildbank", false },
+        MERCHANT_SHOW         = { "merchant",  true  },
+        MERCHANT_CLOSED       = { "merchant",  false },
     }
     -- pcall belt: RegisterEvent on an unknown event name is a HARD error, and this loop runs
     -- BEFORE the OnEvent wiring below, so one bad name kills StartAddon; a panel lost to a patch rename must degrade to "that panel doesn't unmerge", never a dead bags addon.
@@ -8353,6 +8394,12 @@ local function StartAddon()
             C_Timer.After(0, _DetectFlush)
         end
         if not AUI_Bags:IsVisible() then return end
+        if event == "BAG_CONTAINER_UPDATE" then
+            if AUI_BagsWindow:IsVisible() then
+                AUI_BagsWindow:RefreshBags()
+            end
+            return
+        end
         if event == "BAG_UPDATE" then
             if AUI_Bags._pendingBagSwap and AUI_BagsWindow:IsVisible() then
                 AUI_Bags._pendingBagSwap = nil
