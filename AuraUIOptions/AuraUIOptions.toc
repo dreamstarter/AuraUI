@@ -28,6 +28,7 @@ AUI_CooldownManager_TalentConditions.lua
 AUI_DamageMeters_Options.lua
 AuraUIDataBars_Options.lua
 AUI_ForeverEssentials_Options.lua
+AUI_ForeverEssentials_General_Options.lua
 AUI_ForeverEssentials_Travel_Options.lua
 AUI_ForeverEssentials_Threat_Options.lua
 AUI_Friends_Options.lua

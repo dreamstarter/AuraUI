@@ -25,6 +25,22 @@ _G._AUI_BuildFlightTimerPage = function(pageName, parent, yOffset)
         FT.ApplyStyle()
     end
 
+    -- Run looping preview while the Travel page is open so every setting reflects live.
+    if not off() and FT.StartLoopPreview then
+        FT.StartLoopPreview()
+    end
+    if not parent._auiFlightTimerCleanupsHooked then
+        parent._auiFlightTimerCleanupsHooked = true
+        parent:HookScript("OnHide", function()
+            if FT.StopLoopPreview then FT.StopLoopPreview() end
+        end)
+        if AuraUI.RegisterOnHide then
+            AuraUI:RegisterOnHide(function()
+                if FT.StopLoopPreview then FT.StopLoopPreview() end
+            end)
+        end
+    end
+
     local function TextCogRows(prefix)
         return {
             { type = "slider", label = "Text Size", min = 8, max = 24, step = 1,
@@ -51,12 +67,23 @@ _G._AUI_BuildFlightTimerPage = function(pageName, parent, yOffset)
           setValue = function(v)
               FT.Cfg().enabled = v
               FT.Apply()
+              if v and FT.StartLoopPreview then
+                  FT.StartLoopPreview()
+              elseif not v and FT.StopLoopPreview then
+                  FT.StopLoopPreview()
+              end
               AuraUI:RefreshPage()
           end },
         { type = "labeledButton", text = "Preview", buttonText = "Show Bar",
           disabled = off,
           disabledTooltip = "Flight Timer",
-          onClick = function() FT.Preview() end }
+          onClick = function()
+              if FT.StartLoopPreview then
+                  FT.StartLoopPreview()
+              else
+                  FT.Preview()
+              end
+          end }
     );  y = y - h
 
     _, h = W:DualRow(parent, y,

@@ -110,6 +110,32 @@ media_files = [
 for m in media_files:
     check(os.path.exists(m), f"Media asset exists: {m}")
 
+# 6. Upstream 9.3.7 WoW: Forever Features & Fixes
+print("\n6. Verifying 9.3.7 WoW: Forever Features & Upstream Fixes...")
+uprank_file = "AuraUIForeverEssentials/AuraUIForeverEssentials_AutoUprank.lua"
+check(os.path.exists(uprank_file), "Auto Uprank module exists")
+if os.path.exists(uprank_file):
+    with open(uprank_file, "r", encoding="utf-8") as f:
+        uprank_code = f.read()
+    check("LEARNED_SPELL_IN_TAB" in uprank_code, "Auto Uprank registers LEARNED_SPELL_IN_TAB")
+    check("InCombatLockdown()" in uprank_code, "Auto Uprank protects combat state")
+    check("PickupSpell" in uprank_code and "PlaceAction" in uprank_code, "Auto Uprank handles action bar placement")
+
+options_general = "AuraUIOptions/AUI_ForeverEssentials_General_Options.lua"
+check(os.path.exists(options_general), "Forever Essentials General options page exists")
+
+with open("AuraUI/AuraUI.lua", "r", encoding="utf-8") as f:
+    aui_code = f.read()
+check("PLAYER_LEVEL_UP" in aui_code and "_playerCastBarCombatRegenFrame" in aui_code, "Blizzard cast bar combat level up suppression active")
+
+with open("AuraUIActionBars/AuraUIActionBars.lua", "r", encoding="utf-8") as f:
+    ab_code = f.read()
+check("ActionBarButtonEventsFrame" in ab_code and "statehidden" in ab_code and "_auiCooldownSuppressed" in ab_code, "Hidden action buttons combat cooldown error guard active")
+
+with open("AuraUIForeverEssentials/AuraUIForeverEssentials_FlightTimer.lua", "r", encoding="utf-8") as f:
+    ft_code = f.read()
+check("StartLoopPreview" in ft_code and "StopLoopPreview" in ft_code, "Flight timer loop preview API active")
+
 print("\n==================================================================")
 print(f"Diagnostic Results: {passed} Passed, {failed} Failed")
 print("==================================================================")

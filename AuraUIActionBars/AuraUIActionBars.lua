@@ -960,6 +960,61 @@ hiddenParent:Hide()
 function ns.QuietlyHideBlizzButton(btn)
     btn:UnregisterAllEvents()
     btn:SetAttributeNoHandler("statehidden", true)
+
+    -- Drop from Blizzard's action bar event broadcaster lists so combat-entry
+    -- cooldown updates don't dispatch to hidden stock buttons.
+    if ActionBarButtonEventsFrame then
+        if ActionBarButtonEventsFrame.UnregisterFrame then
+            pcall(ActionBarButtonEventsFrame.UnregisterFrame, ActionBarButtonEventsFrame, btn)
+        end
+        if type(ActionBarButtonEventsFrame.frames) == "table" then
+            for k, f in pairs(ActionBarButtonEventsFrame.frames) do
+                if f == btn then
+                    ActionBarButtonEventsFrame.frames[k] = nil
+                end
+            end
+        end
+    end
+    if ActionBarActionEventsFrame then
+        if ActionBarActionEventsFrame.UnregisterFrame then
+            pcall(ActionBarActionEventsFrame.UnregisterFrame, ActionBarActionEventsFrame, btn)
+        end
+        if type(ActionBarActionEventsFrame.frames) == "table" then
+            for k, f in pairs(ActionBarActionEventsFrame.frames) do
+                if f == btn then
+                    ActionBarActionEventsFrame.frames[k] = nil
+                end
+            end
+        end
+    end
+
+    -- Clear and quiet cooldown frames on the hidden button to prevent combat-entry errors.
+    local cd = btn.cooldown or (btn.GetName and _G[btn:GetName() .. "Cooldown"])
+    if cd then
+        if cd.UnregisterAllEvents then pcall(cd.UnregisterAllEvents, cd) end
+        if cd.Clear then pcall(cd.Clear, cd) elseif CooldownFrame_Clear then pcall(CooldownFrame_Clear, cd) end
+        if cd.SetCooldown then pcall(cd.SetCooldown, cd, 0, 0) end
+        if cd.Hide then pcall(cd.Hide, cd) end
+    end
+    local ch = btn.chargeCooldown or (btn.GetName and _G[btn:GetName() .. "ChargeCooldown"])
+    if ch then
+        if ch.UnregisterAllEvents then pcall(ch.UnregisterAllEvents, ch) end
+        if ch.Clear then pcall(ch.Clear, ch) elseif CooldownFrame_Clear then pcall(CooldownFrame_Clear, ch) end
+        if ch.SetCooldown then pcall(ch.SetCooldown, ch, 0, 0) end
+        if ch.Hide then pcall(ch.Hide, ch) end
+    end
+
+    -- Guard against direct UpdateCooldown invocations on statehidden stock buttons.
+    if btn.UpdateCooldown and not btn._auiCooldownSuppressed then
+        btn._auiCooldownSuppressed = true
+        local orig = btn.UpdateCooldown
+        btn.UpdateCooldown = function(self, ...)
+            if self:GetAttribute("statehidden") then
+                return
+            end
+            return orig(self, ...)
+        end
+    end
 end
 
 -- Re-hide a stock bar Blizzard just re-Show()'d, without calling Hide() or

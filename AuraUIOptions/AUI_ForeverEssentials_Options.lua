@@ -10,6 +10,7 @@ if AUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (AuraUI_Client
 -- and What's New nav carries them as strings and fails SILENTLY on a mismatch.
 if not AuraUI._ModuleNS["AuraUIForeverEssentials"] then return end  -- module disabled: no options page
 
+local PAGE_GENERAL = "General"
 local PAGE_TRAVEL = "Travel"
 local PAGE_THREAT = "Threat"
 
@@ -21,9 +22,12 @@ initFrame:SetScript("OnEvent", function(self)
     AuraUI:RegisterModule("AuraUIForeverEssentials", {
         title       = "Forever Essentials",
         description = "Essential tools for WoW Forever.",
-        pages       = { PAGE_TRAVEL, PAGE_THREAT },
-        searchTerms = { "flight timer", "flight path", "threat", "threat meter", "aggro" },
+        pages       = { PAGE_GENERAL, PAGE_TRAVEL, PAGE_THREAT },
+        searchTerms = { "flight timer", "flight path", "threat", "threat meter", "aggro", "auto uprank", "uprank", "spell rank", "spells" },
         buildPage   = function(pageName, parent, yOffset)
+            if pageName == PAGE_GENERAL and _G._AUI_BuildForeverGeneralPage then
+                return _G._AUI_BuildForeverGeneralPage(pageName, parent, yOffset)
+            end
             if pageName == PAGE_TRAVEL and _G._AUI_BuildFlightTimerPage then
                 return _G._AUI_BuildFlightTimerPage(pageName, parent, yOffset)
             end
@@ -38,6 +42,7 @@ initFrame:SetScript("OnEvent", function(self)
         end,
         onReset = function()
             if AuraUIDB then
+                AuraUIDB.autoUprank = nil
                 AuraUIDB.flightTimer = nil
                 AuraUIDB.threatMeter = nil
                 if AuraUIDB.unlockAnchors then

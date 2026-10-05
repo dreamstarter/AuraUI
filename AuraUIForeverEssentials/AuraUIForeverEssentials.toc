@@ -20,3 +20,6 @@ AuraUIForeverEssentials_FlightTimer.lua
 AuraUIForeverEssentials_ThreatData.lua
 AuraUIForeverEssentials_Window.lua
 AuraUIForeverEssentials_ThreatMeter.lua
+
+# Spells (auto uprank)
+AuraUIForeverEssentials_AutoUprank.lua

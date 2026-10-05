@@ -211,23 +211,33 @@ local Land
 local function UpdateText()
     local elapsed = GetTime() - flight.start
     if flight.preview and elapsed >= flight.eta then
-        EndFlight()
+        if flight.loop then
+            StartFlight(flight.dest or AuraUI.L("Flight Timer Preview"), nil, true, true)
+            return
+        else
+            EndFlight()
+            return
+        end
     elseif not flight.preview and elapsed > 2 and not UnitOnTaxi("player") then
         -- Landing edge missed (PLAYER_CONTROL_GAINED is the precise one): end the
         -- flight here instead of running on, but learn nothing from a late read.
         flight.early = true
         Land()
+        return
     elseif flight.eta then
         local left = FormatTime(flight.eta - elapsed)
         bar.time:SetText(Get("showTotal") and (left .. " / " .. FormatTime(flight.eta)) or left)
+        if not bar.SetTimerDuration then
+            bar:SetValue(math.min(elapsed, flight.eta))
+        end
     else
         bar.time:SetText(FormatTime(elapsed))
     end
 end
 
-local function StartFlight(dest, yards, preview)
+local function StartFlight(dest, yards, preview, loop)
     local now = GetTime()
-    flight = { dest = dest, yards = yards, start = now, preview = preview }
+    flight = { dest = dest, yards = yards, start = now, preview = preview, loop = loop }
     if preview then
         flight.eta = PREVIEW_SECONDS
     elseif yards then
@@ -238,9 +248,14 @@ local function StartFlight(dest, yards, preview)
     bar.dest:SetText(dest or "")
     ApplyFillColor()
     if flight.eta then
-        local dur = C_DurationUtil.CreateDuration()
-        dur:SetTimeFromStart(now, flight.eta)
-        bar:SetTimerDuration(dur, Enum.StatusBarInterpolation.Immediate, Enum.StatusBarTimerDirection.ElapsedTime)
+        if bar.SetTimerDuration and C_DurationUtil and C_DurationUtil.CreateDuration and Enum and Enum.StatusBarInterpolation and Enum.StatusBarTimerDirection then
+            local dur = C_DurationUtil.CreateDuration()
+            dur:SetTimeFromStart(now, flight.eta)
+            bar:SetTimerDuration(dur, Enum.StatusBarInterpolation.Immediate, Enum.StatusBarTimerDirection.ElapsedTime)
+        else
+            bar:SetMinMaxValues(0, flight.eta)
+            bar:SetValue(0)
+        end
     end
     UpdateText()
     bar:Show()
@@ -314,7 +329,19 @@ AuraUI._FlightTimer = {
     textures = { lookup = BAR_TEXTURES, names = BAR_TEXTURE_NAMES, order = BAR_TEXTURE_ORDER },
     Preview = function()
         if flight and not flight.preview then return end
-        StartFlight(AuraUI.L("Flight Timer Preview"), nil, true)
+        StartFlight(AuraUI.L("Flight Timer Preview"), nil, true, false)
+    end,
+    StartLoopPreview = function()
+        if flight and not flight.preview then return end
+        StartFlight(AuraUI.L("Flight Timer Preview"), nil, true, true)
+    end,
+    StopLoopPreview = function()
+        if flight and flight.preview then
+            EndFlight()
+        end
+    end,
+    IsPreviewing = function()
+        return (flight and flight.preview) and true or false
     end,
 }
 

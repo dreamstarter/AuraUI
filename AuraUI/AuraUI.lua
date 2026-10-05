@@ -15187,19 +15187,68 @@ function AuraUI.SetPlayerCastBarSuppressed(owner, suppressed)
             AuraUI._GetFFD(blizzBar).setParentHooked = true
             hooksecurefunc(blizzBar, "SetParent", function(self, newParent)
                 if AuraUI._GetFFD(self).castBarSuppressed and newParent ~= AuraUI._playerCastBarHiddenParent then
-                    C_Timer.After(0, function()
-                        -- Never re-parent while Edit Mode is open, even from a timer: SetParent
-                        -- fires Blizzard's synchronous layout handlers under addon taint and poisons the manager's state for its next pass (the Edit Mode close hook in UnitFrames re-applies suppression).
-                        if AuraUI._GetFFD(self).castBarSuppressed
-                           and not InCombatLockdown()
-                           and not (EditModeManagerFrame and EditModeManagerFrame:IsShown())
-                           and self:GetParent() ~= AuraUI._playerCastBarHiddenParent
-                        then
-                            self:SetParent(AuraUI._playerCastBarHiddenParent)
-                        end
-                    end)
+                    if InCombatLockdown() then
+                        self:Hide()
+                        self:SetAlpha(0)
+                    else
+                        C_Timer.After(0, function()
+                            -- Never re-parent while Edit Mode is open, even from a timer: SetParent
+                            -- fires Blizzard's synchronous layout handlers under addon taint and poisons the manager's state for its next pass (the Edit Mode close hook in UnitFrames re-applies suppression).
+                            if AuraUI._GetFFD(self).castBarSuppressed
+                               and not InCombatLockdown()
+                               and not (EditModeManagerFrame and EditModeManagerFrame:IsShown())
+                               and self:GetParent() ~= AuraUI._playerCastBarHiddenParent
+                            then
+                                self:SetParent(AuraUI._playerCastBarHiddenParent)
+                                self:SetAlpha(1)
+                            end
+                        end)
+                    end
                 end
             end)
+        end
+
+        -- Level-up and combat-safe visibility suppression: Blizzard can re-show or re-parent the cast bar
+        -- on PLAYER_LEVEL_UP (even in combat). Keep it hidden and alpha-0 during combat until regen re-parks it.
+        if not AuraUI._GetFFD(blizzBar).showHooked then
+            AuraUI._GetFFD(blizzBar).showHooked = true
+            hooksecurefunc(blizzBar, "Show", function(self)
+                if AuraUI._GetFFD(self).castBarSuppressed then
+                    self:Hide()
+                    self:SetAlpha(0)
+                    if not InCombatLockdown()
+                       and not (EditModeManagerFrame and EditModeManagerFrame:IsShown())
+                       and AuraUI._playerCastBarHiddenParent
+                       and self:GetParent() ~= AuraUI._playerCastBarHiddenParent
+                    then
+                        self:SetParent(AuraUI._playerCastBarHiddenParent)
+                        self:SetAlpha(1)
+                    end
+                end
+            end)
+        end
+
+        if not AuraUI._playerCastBarCombatRegenFrame then
+            local crf = CreateFrame("Frame")
+            crf:RegisterEvent("PLAYER_REGEN_ENABLED")
+            crf:RegisterEvent("PLAYER_LEVEL_UP")
+            crf:SetScript("OnEvent", function(_, event)
+                local bar = PlayerCastingBarFrame
+                if not bar or not (AuraUI._GetFFD(bar) and AuraUI._GetFFD(bar).castBarSuppressed) then return end
+                if event == "PLAYER_LEVEL_UP" then
+                    bar:Hide()
+                    bar:SetAlpha(0)
+                end
+                if not InCombatLockdown()
+                   and not (EditModeManagerFrame and EditModeManagerFrame:IsShown())
+                   and AuraUI._playerCastBarHiddenParent
+                   and bar:GetParent() ~= AuraUI._playerCastBarHiddenParent
+                then
+                    bar:SetParent(AuraUI._playerCastBarHiddenParent)
+                    bar:SetAlpha(1)
+                end
+            end)
+            AuraUI._playerCastBarCombatRegenFrame = crf
         end
 
         local selection = blizzBar.Selection
@@ -15230,6 +15279,7 @@ function AuraUI.SetPlayerCastBarSuppressed(owner, suppressed)
     end
 
     AuraUI._GetFFD(blizzBar).castBarSuppressed = false
+    blizzBar:SetAlpha(1)
 
     -- Hand the bar back to the parent AUI took it from -- but never to one that is itself hidden.
     -- Blizzard parents this bar under PlayerFrame, and Edit Mode re-parents it into a layout frame
