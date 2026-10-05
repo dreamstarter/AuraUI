@@ -12,37 +12,34 @@ local IS_STANDALONE = type(AUI_HOST_ADDON) == "string" and AUI_HOST_ADDON:find("
 -------------------------------------------------------------------------------
 --  Visual Settings  (edit these to adjust the look -- values only, no tables)
 -------------------------------------------------------------------------------
--- Accent colour -- canonical default: #00E5FF cyan. The Forever client opens
--- on #DCA77F (soft bronze) instead; a chosen accent always wins over this.
+-- Accent colour -- canonical default: #00E5FF electric cyan.
 local DEFAULT_ACCENT_R, DEFAULT_ACCENT_G, DEFAULT_ACCENT_B = 0, 229/255, 1
-if AUI_CLIENT_FOREVER == true then
-    DEFAULT_ACCENT_R, DEFAULT_ACCENT_G, DEFAULT_ACCENT_B = 220/255, 167/255, 127/255
-end
 
 -- Theme presets: { accentR, accentG, accentB, bgFile }
 -- bgFile is relative to MEDIA_PATH (resolved later after MEDIA_PATH is defined)
 local THEME_PRESETS = {
-    ["AuraUI"]    = { r = 0, g = 229/255, b = 1 },  -- #00E5FF Electric Cyan
-    ["AuraUI Original"] = { r = 12/255, g = 210/255, b = 157/255 },  -- #0CD29D
-    ["AuraUI Forever"] = { r = 220/255, g = 167/255, b = 127/255 },  -- #DCA77F soft bronze
-    ["Horde"]          = { r = 255/255, g = 90/255,  b = 31/255  },  -- #FF5A1F
-    ["Alliance"]       = { r = 63/255,  g = 167/255, b = 255/255 },  -- #3FA7FF
-    ["Faction (Auto)"] = nil,  -- resolved at runtime to Horde or Alliance
-    ["Midnight"]       = { r = 120/255, g = 65/255,  b = 200/255 },  -- #7841C8  deep purple void
-    ["Dark"]           = { r = 1,       g = 1,       b = 1       },  -- white accent
-    ["Pixels"]         = { r = 1,       g = 1,       b = 1       },  -- white accent
-    ["Class Colored"]  = nil,  -- resolved at runtime from player class
-    ["Custom Color"]   = nil,  -- user-chosen via color picker
+    ["AuraUI"]            = { r = 0,       g = 229/255, b = 1         },  -- #00E5FF Electric Cyan
+    ["AuraUI Cyber Void"] = { r = 124/255, g = 77/255,  b = 1         },  -- #7C4DFF Deep Violet / Neon
+    ["AuraUI Original"]   = { r = 12/255,  g = 210/255, b = 157/255   },  -- #0CD29D Mint
+    ["AuraUI Forever"]    = { r = 220/255, g = 167/255, b = 127/255   },  -- #DCA77F soft bronze
+    ["Horde"]             = { r = 255/255, g = 90/255,  b = 31/255    },  -- #FF5A1F
+    ["Alliance"]          = { r = 63/255,  g = 167/255, b = 255/255   },  -- #3FA7FF
+    ["Faction (Auto)"]    = nil,  -- resolved at runtime to Horde or Alliance
+    ["Midnight"]          = { r = 120/255, g = 65/255,  b = 200/255   },  -- #7841C8  deep purple void
+    ["Dark"]              = { r = 1,       g = 1,       b = 1         },  -- white accent
+    ["Pixels"]            = { r = 1,       g = 1,       b = 1         },  -- white accent
+    ["Class Colored"]     = nil,  -- resolved at runtime from player class
+    ["Custom Color"]      = nil,  -- user-chosen via color picker
 }
-local THEME_ORDER = { "AuraUI", "AuraUI Original", "AuraUI Forever", "Horde", "Alliance", "Faction (Auto)", "Midnight", "Dark", "Pixels", "Class Colored", "Custom Color" }
--- The theme in force when none was chosen: the Forever client opens on its own
--- backdrop, every other client on the house one. A chosen theme always wins.
-AuraUI.DEFAULT_THEME = (AUI_CLIENT_FOREVER == true) and "AuraUI Forever" or "AuraUI"
+local THEME_ORDER = { "AuraUI", "AuraUI Cyber Void", "AuraUI Forever", "Horde", "Alliance", "Faction (Auto)", "Midnight", "Dark", "Pixels", "Class Colored", "Custom Color" }
+-- Canonical default theme: AuraUI Dark Glass
+AuraUI.DEFAULT_THEME = "AuraUI"
 -- Background file paths per theme (relative to MEDIA_PATH, in backgrounds/ subfolder)
 local THEME_BG_FILES = {
-    ["AuraUI"]   = "backgrounds\\aui-bg-new.png",
-    ["AuraUI Original"] = "backgrounds\\aui-bg-old.png",
-    ["AuraUI Forever"] = "backgrounds\\aui-bg-forever-compressed.png",
+    ["AuraUI"]            = "backgrounds\\aui-bg-new.png",
+    ["AuraUI Cyber Void"] = "backgrounds\\aui-bg-midnight-compressed.png",
+    ["AuraUI Original"]   = "backgrounds\\aui-bg-old.png",
+    ["AuraUI Forever"]    = "backgrounds\\aui-bg-forever-compressed.png",
     ["Horde"]         = "backgrounds\\aui-bg-horde-compressed.png",
     ["Alliance"]      = "backgrounds\\aui-bg-alliance-compressed.png",
     ["Midnight"]      = "backgrounds\\aui-bg-midnight-compressed.png",
@@ -2281,6 +2278,7 @@ end
 
 -- Statusbar texture catalogue: same contract as the sound catalogue above.
 AuraUI.BAR_TEXTURE_FILES = {
+    ["aura-glass"] = "AuraGlass.tga", ["aura-smooth"] = "AuraSmooth.tga", ["aura-minimal"] = "AuraMinimal.tga",
     melli = "melli.tga", beautiful = "beautiful.tga", plating = "plating.tga",
     atrocity = "atrocity.tga", divide = "divide.tga", glass = "glass.tga",
     ["fade-right"] = "fade-right.tga", ["thin-line-top"] = "thin-line-top.tga",
@@ -2295,6 +2293,11 @@ AuraUI.BAR_TEXTURE_FILES = {
 }
 AuraUI.BAR_TEXTURE_NAMES = {
     none = "None", melli = "Melli (ElvUI)", beautiful = "Beautiful",
+    none = "None",
+    ["aura-glass"] = "Aura Glass (Default)",
+    ["aura-smooth"] = "Aura Smooth",
+    ["aura-minimal"] = "Aura Minimal",
+    melli = "Melli (ElvUI)", beautiful = "Beautiful",
     plating = "Plating", atrocity = "Atrocity", divide = "Divide",
     glass = "Glass", ["fade-right"] = "Fade Right",
     ["thin-line-top"] = "Thin Line Top", ["thin-line-bottom"] = "Thin Line Bottom",
@@ -2307,6 +2310,8 @@ AuraUI.BAR_TEXTURE_NAMES = {
 }
 AuraUI.BAR_TEXTURE_ORDER = {
     "none", "melli", "atrocity",
+    "none", "aura-glass", "aura-smooth", "aura-minimal",
+    "melli", "atrocity",
     "fade", "fade-right",
     "thin-line-top", "thin-line-bottom",
     "beautiful", "plating",
@@ -5012,6 +5017,10 @@ do
                 LSM:Register(LSM.MediaType.FONT, name, MEDIA_PATH .. "fonts\\" .. file)
             end
         end
+        -- Register native AuraUI statusbar textures
+        LSM:Register(LSM.MediaType.STATUSBAR, "AuraGlass",   MEDIA_PATH .. "textures\\AuraGlass.tga")
+        LSM:Register(LSM.MediaType.STATUSBAR, "AuraSmooth",  MEDIA_PATH .. "textures\\AuraSmooth.tga")
+        LSM:Register(LSM.MediaType.STATUSBAR, "AuraMinimal", MEDIA_PATH .. "textures\\AuraMinimal.tga")
         -- Snapshot all currently registered SM fonts into the path lookup
         local smFonts = LSM:HashTable("font")
         if smFonts then
@@ -8963,6 +8972,31 @@ local function CreateMainFrame()
     sidebar:SetFrameLevel(clickArea:GetFrameLevel() + 2)
     AuraUI._sidebar = sidebar
 
+    -- Native AuraUI Branded Sidebar Header Plate
+    local logoPlate = CreateFrame("Frame", nil, sidebar)
+    logoPlate:SetSize(SIDEBAR_W - 30, 80)
+    logoPlate:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 18, -18)
+
+    local logoIcon = logoPlate:CreateTexture(nil, "ARTWORK")
+    logoIcon:SetSize(46, 46)
+    logoIcon:SetPoint("LEFT", logoPlate, "LEFT", 2, 0)
+    logoIcon:SetTexture("Interface\\AddOns\\AuraUI\\media\\aui-logo.tga")
+
+    local titleFs = MakeFont(logoPlate, 22, "", 0, 229/255, 1)
+    titleFs:SetPoint("TOPLEFT", logoIcon, "TOPRIGHT", 10, -2)
+    titleFs:SetText("AURA|cffffffffUI|r")
+
+    local subTitleFs = MakeFont(logoPlate, 10, nil, 180/255, 140/255, 255/255, 0.9)
+    subTitleFs:SetPoint("BOTTOMLEFT", logoIcon, "BOTTOMRIGHT", 10, 4)
+    subTitleFs:SetText((AUI_CLIENT_FOREVER == true) and "FOREVER EDITION" or "INTERFACE SUITE")
+
+    -- Subtle 1px cyan hairline divider beneath the logo plate
+    local logoDivider = logoPlate:CreateTexture(nil, "ARTWORK")
+    logoDivider:SetHeight(1)
+    logoDivider:SetPoint("TOPLEFT", logoPlate, "BOTTOMLEFT", 0, -12)
+    logoDivider:SetPoint("RIGHT", sidebar, "RIGHT", -15, 0)
+    logoDivider:SetColorTexture(0, 229/255, 1, 0.25)
+
     -- Nav buttons -- start below the logo area with proper spacing
     local NAV_TOP     = -114   -- distance from sidebar top to first nav item
     local NAV_ROW_H   = 40    -- height per nav row (Unlock / Global / Patch Notes / Profiles)
@@ -9014,6 +9048,9 @@ local function CreateMainFrame()
         local hR, hG, hB = 0.85, 0.95, 0.90
         btn._hoverGlow = MakeNavGradient(btn, hR, hG, hB, 0.03)
         btn._hoverIndicator = SolidTex(btn, "ARTWORK", hR, hG, hB, 0.25)
+        local hR, hG, hB = 0, 229/255, 1
+        btn._hoverGlow = MakeNavGradient(btn, 124/255, 77/255, 1, 0.06)
+        btn._hoverIndicator = SolidTex(btn, "ARTWORK", hR, hG, hB, 0.40)
         btn._hoverIndicator:SetWidth(3)
         btn._hoverIndicator:SetPoint("TOPLEFT", btn, "TOPLEFT", -1, 0)
         btn._hoverIndicator:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", -1, 0)
@@ -10495,6 +10532,8 @@ local function CreateMainFrame()
             smoothFrame:Hide()
             return
         end
+        local newScroll 
+... [truncated for diff preview]
         local newScroll = cur + diff * math.min(1, SMOOTH_SPEED * elapsed)
         -- Clamp to valid range
         newScroll = math.max(0, math.min(maxScroll, newScroll))
@@ -10974,12 +11013,7 @@ local function CreateMainFrame()
             linkPopup._eb:SetFocus(); linkPopup._eb:HighlightText()
         end
 
-        local socialDefs = {
-            -- { icon = ICONS_PATH .. "twitch-2.png",  url = "https://www.twitch.tv/auraui_gaming", tooltip = "Twitch" },
-            { icon = ICONS_PATH .. "discord-2.png", url = "https://discord.gg/FtCsUSC",             tooltip = "Discord" },
-            -- { icon = ICONS_PATH .. "donate-3.png",  url = "https://www.patreon.com/auraui",       tooltip = "Patreon" },
-            -- { icon = ICONS_PATH .. "paypal.png",    url = "https://www.paypal.biz/aurauigaming",  tooltip = "PayPal" },
-        }
+        local socialDefs = {}
 
         -- Anchor: rightmost icon sits SOCIAL_GAP to the left of where Done starts
         -- Done is at BOTTOMRIGHT -FOOTER_PAD, so first icon anchor = Done left edge - gap

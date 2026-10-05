@@ -183,10 +183,10 @@ local defaults = {
         -- MigratePlayerAuraStyle/MigrateExternalDefensives), independent of this table --
         -- a new profile has nothing to migrate and starts at PAB's fallbacks.
         castbarOpacity = 1.0,
-        castbarColor = { r = 0.114, g = 0.655, b = 0.514 },
+        castbarColor = { r = 0, g = 229/255, b = 1 },
         portraitMode = "2d",
         portraitStyle = "attached",
-        healthBarTexture = "none",
+        healthBarTexture = "aura-glass",
         -- Cast bars follow the health bar texture ("inherit") unless this
         -- names one of their own ("blizzard" = the vanilla cast fill).
         castBarTexture = "inherit",

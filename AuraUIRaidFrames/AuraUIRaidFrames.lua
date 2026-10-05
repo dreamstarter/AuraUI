@@ -404,7 +404,7 @@ local defaults = {
         unlockPos        = nil,
 
         -- Health bar
-        healthBarTexture = "atrocity",
+        healthBarTexture = "aura-glass",
         healthBarOpacity = 100,
         healthColorMode  = "class",  -- "class", "dark", "classic", "custom", "customDynamic", "classReactive"
         customFillColor  = { r = 37/255, g = 193/255, b = 29/255 },

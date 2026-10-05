@@ -491,6 +491,7 @@ local defaults = {
     textSlotTopClassColor = false, textSlotRightClassColor = false,
     textSlotLeftClassColor = false, textSlotCenterClassColor = false,
     healthBarTexture = "none",  -- bar texture overlay
+    healthBarTexture = "aura-glass",  -- bar texture overlay
     castBarTexture = "none",
 }
 local BAR_W = 150
@@ -10206,6 +10207,8 @@ function NameplateFrame:KickProtectionChanged()
         local chName
         chName, _, _, _, _, _, kp = UnitChannelInfo(self.unit)
         if type(chName) == "nil" then return end
+        kickProtec
+... [truncated for diff preview]
         kickProtected = kp
     end
     if type(kickProtected) == "nil" then kickProtected = false end
@@ -11199,5 +11202,4 @@ ns._oocPlatesCtl:SetScript("OnEvent", function(self, event)
     end
 end)
 ns._oocPlatesCtl:RegisterEvent("PLAYER_LOGIN")
-
 

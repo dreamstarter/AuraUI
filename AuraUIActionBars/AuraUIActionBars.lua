@@ -490,7 +490,7 @@ local defaults = {
         cdSwipeColor = { r = 0, g = 0, b = 0 },
         cdSwipeAlpha = 80,
         procGlowType = 1,
-        procGlowColor = { r = 1, g = 0.776, b = 0.376 },
+        procGlowColor = { r = 0, g = 229/255, b = 1 },
         procGlowUseClassColor = false,
         procGlowScale = 1.0,
         procGlowEnabled = false,
@@ -11512,7 +11512,7 @@ local function UpdateFlipbook(btn)
         local cc = RAID_CLASS_COLORS[class]
         if cc then cr, cg, cb = cc.r, cc.g, cc.b else cr, cg, cb = 1, 1, 1 end
     else
-        local c = p.procGlowColor or { r = 1, g = 0.776, b = 0.376 }
+        local c = p.procGlowColor or { r = 0, g = 229/255, b = 1 }
         cr, cg, cb = c.r, c.g, c.b
     end
 
