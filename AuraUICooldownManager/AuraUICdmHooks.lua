@@ -3236,8 +3236,12 @@ local function DecorateFrame(frame, barData)
         kt:SetJustifyH("LEFT")
         kt:SetTextColor(barData.keybindR or 1, barData.keybindG or 1,
             barData.keybindB or 1, barData.keybindA or 0.9)
+        kt:SetText("")
         kt:Hide()
         fd.keybindText = kt
+    else
+        fd.keybindText:SetText("")
+        fd.keybindText:Hide()
     end
 
     fd.tooltipShown = false
@@ -10540,6 +10544,7 @@ function ns.SetupViewerHooks()
             -- post-close viewer state rather than a mid-close transient.
             C_Timer.After(0.4, function()
                 if ns.RequestCDMDropPass then ns.RequestCDMDropPass("settings") end
+                if ns.UpdateCDMKeybinds then ns.UpdateCDMKeybinds() end
             end)
         end, cdmSettingsOwner)
     end
@@ -11088,6 +11093,9 @@ function ns.SetupViewerHooks()
     if CooldownViewerSettings then
         CooldownViewerSettings:HookScript("OnHide", function()
             C_Timer.After(0.3, QueueReanchor)
+            C_Timer.After(0.4, function()
+                if ns.UpdateCDMKeybinds then ns.UpdateCDMKeybinds() end
+            end)
         end)
     end
 

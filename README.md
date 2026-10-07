@@ -1,51 +1,76 @@
-# AuraUI - High-Performance World of Warcraft AddOn Suite
+# AuraUI - High-Performance World of Warcraft Interface Suite
 
-**AuraUI** is a lightweight, high-performance UI suite for World of Warcraft:Forever, featuring 21 fully integrated modular systems, an interactive Edit Mode alignment grid, automatic spec-based profile switching, and an automated dual-runner test suite.
+**AuraUI** is an all-in-one, high-performance interface suite for World of Warcraft and WoW: Forever. Built on the **Aura Neon Glass** design philosophy, it features deep obsidian backdrops, crisp 1-pixel borders, Electric Cyan (`#00E5FF`) and Deep Violet (`#7C4DFF`) accents, 22 integrated modular systems, an interactive Edit Mode alignment grid, automatic spec-based profile switching, and an automated diagnostic test suite.
 
 ---
 
-## 🧩 Complete Module Suite (21 Modules)
+## 🧩 Complete Module Suite (22 Modules)
 
-1. ⚔️ **[ActionBars.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/ActionBars.lua)**: Action bar containers, button styling & keybind text formatting.
-2. 💚 **[UnitFrames.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/UnitFrames.lua)**: Custom Player, Target, Focus, Pet, and Boss unit frames.
-3. 🏷️ **[Nameplates.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/Nameplates.lua)**: Custom enemy & friendly nameplates with castbars and threat highlights.
-4. 🛡️ **[RaidFrames.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/RaidFrames.lua)**: Compact Party & Raid grid frames with role icons and debuff tracking.
-5. ⏳ **[Cooldowns.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/Cooldowns.lua)**: Spell cooldown manager with timer icons and countdown numbers.
-6. ⚡ **[ResourceBars.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/ResourceBars.lua)**: Class resource tracking (Combo Points, Holy Power, Shards, Runes, Energy, Mana).
-7. 🔔 **[BuffReminders.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/BuffReminders.lua)**: Missing self-buff reminders (Flask, Food, Rune, Weapon Enchants).
-8. 🎨 **[Skinning.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/Skinning.lua)**: Reskins Blizzard UI windows, tooltips, dialogs, and popups.
-9. 🎯 **[CursorEffects.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/CursorEffects.lua)**: High-visibility cursor trails & glow effects for fast combat tracking.
-10. ⚡ **[QualityOfLife.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/QualityOfLife.lua)**: Merchant auto-sell junk, auto-repair, and fast looting.
-11. 🏆 **[MythicPlus.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/MythicPlus.lua)**: Custom Mythic+ Keystone HUD with timer, death counter, and affixes.
-12. 🐉 **[SkyridingHUD.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/SkyridingHUD.lua)**: Skyriding / Dragonriding Vigor bar HUD & speedometer.
-13. 📍 **[Minimap.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/Minimap.lua)**: Borderless minimap skin and dynamic datatext bar (FPS, MS, Gold).
-14. 👥 **[FriendsList.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/FriendsList.lua)**: Enhanced BNet / Friends list with class coloring and zone info.
-15. 💬 **[Chat.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/Chat.lua)**: Chat frame skinning, URL copy links, timestamp formatting, and short channel names.
-16. 📜 **[QuestTracker.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/QuestTracker.lua)**: Objective tracker skinning and auto-collapse in dungeons/raids.
-17. 📊 **[DamageMeter.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/DamageMeter.lua)**: Built-in lightweight DPS/HPS meter and threat bar.
-18. 🎒 **[Bags.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/Bags.lua)**: All-in-one combined inventory container with item quality borders.
-19. 📈 **[DataBars.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/DataBars.lua)**: Experience, Reputation, Honor, and Renown progress bars.
-20. 🎉 **[PartyMode.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/PartyMode.lua)**: Celebratory level-up announcements & dungeon completion effects.
-21. 🛠️ **[UIUtilities.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/UIUtilities.lua)**: Quick raid marker bar, character sheet item level display, and combat text tweaks.
-22. 🧪 **[TestRunner.lua](file:///d:/Development/personal/wow%20addon%20suite/AuraUI/Modules/TestRunner.lua)**: In-game automated diagnostic suite (`/aui test`).
+1. **AuraUI**: Core shared framework, media textures, fonts, profile management, and innovative utilities.
+2. **AuraUIOptions**: Comprehensive Dark Glass interactive configuration window (`/aui config`).
+3. **AuraUIActionBars**: Dark Glass action bar containers, button styling, hotkey formatting, and quest XP overlay.
+4. **AuraUIUnitFrames**: Custom Player, Target, Focus, Pet, and Target-of-Target frames with class power and castbars.
+5. **AuraUIRaidFrames**: Compact 5-man party and 40-man raid grid frames with role icons, debuff manager, and click-casting.
+6. **AuraUINameplates**: High-contrast enemy and friendly nameplates with castbars, threat borders, and debuff coloring.
+7. **AuraUICooldownManager**: Spell cooldown tracking grid with reverse swipe, timer text, and custom proc glows.
+8. **AuraUIResourceBars**: Class resource tracking (Combo Points, Holy Power, Runes, Soul Shards, Energy, Mana).
+9. **AuraUIAuraBuffReminders**: Missing self-buff and consumable reminders (Flask, Food, Weapon Enchants).
+10. **AuraUIBlizzardSkin**: Dark Glass styling for Blizzard dialogs, spellbook, talents, merchant, and tooltips.
+11. **AuraUIMinimap**: Borderless square or circular minimap with curved button arc, coordinates, and datatexts.
+12. **AuraUIBags**: Combined inventory container with item quality borders, category sorting, and instant search.
+13. **AuraUIChat**: Chat frame skinning, spam filtering, URL copy, timestamp formatting, and short channel names.
+14. **AuraUIQuestTracker**: Objective tracker skinning and auto-collapse in instances.
+15. **AuraUIDamageMeters**: Lightweight embedded DPS/HPS meter and threat bar.
+16. **AuraUIDataBars**: Experience, Reputation, and Honor progress bars with quest log XP forecast.
+17. **AuraUIQoL**: Fast loot, vendor junk selling, auto-repair, cinematic skipper, and SCT hit staggering.
+18. **AuraUIQuickdraw**: Fast radial shortcuts and utility keybinding wheel.
+19. **AuraUIForeverEssentials**: Dedicated Threat Meter and Flight Timer for WoW: Forever (16001).
+20. **AuraUIFriends**: Enhanced Friends and Guild roster list with class coloring.
+21. **AuraUILocales**: Multi-language localization engine and font mapping.
+22. **AuraUIMythicTimer**: Mythic+ keystone HUD with affix tracking and death counters.
+
+---
+
+## 💡 Unique Innovations
+
+* **Smart Auto-Marker (`AuraUI_AutoMarker`)**: Automatically marks priority targets and crowd control assignments based on role.
+* **Loot Council Lite (`AuraUI_LootCouncil`)**: In-game raid loot distribution voting interface for guilds and master looters.
+* **Map Notes & Waypoints (`AuraUI_MapNotes`)**: Place custom pins and shareable coordinate waypoints with guild members.
+* **Guild Roster & Officer Notes (`AuraUI_GuildNotes`)**: In-line editor and search tools for managing guild rank permissions and member notes.
+* **Sound Pack Customizer (`AuraUI_SoundPackCustomizer`)**: Select and assign custom audio cues for procs, kicks, and alerts.
+* **Smart Chat Filter (`AuraUIChat_Filter`)**: Lightweight regex-driven spam filter that cleans trade and general chat.
+
+---
+
+## 🕹️ Slash Commands
+
+* `/aui` or `/auraui` - Open the interactive configuration window
+* `/aui unlock` or `/aui move` - Toggle Interactive Edit Mode (Move & snap frames)
+* `/aui lock` - Save and exit Edit Mode
+* `/aui spec` - View current spec profile status
+* `/aui test` - Run the automated diagnostic test suite (`tests/run_tests.py` or in-game)
+* `/aui reset` - Reset current profile or module back to defaults
 
 ---
 
 ## 🧪 Testing & Quality Assurance
 
-AuraUI includes a **Dual-Runner Test Suite**:
+AuraUI includes an automated diagnostic test suite verifying manifest integrity, client gates, and feature logic:
 
-1. **In-Game Diagnostic Test Runner (`/aui test`)**:
-   - Run `/aui test` in World of Warcraft to trigger real-time diagnostics on module registrations, profile data integrity, Edit Mode mover anchors, media lookups, and keybind formatters.
+```bash
+# Run tests headlessly
+python tests/run_tests.py
 
-2. **Standalone CLI Test Runner ([tests/run_tests.lua](file:///d:/Development/personal/wow%20addon%20suite/tests/run_tests.lua))**:
-   - Mocks the World of Warcraft API ([tests/wow_api_mock.lua](file:///d:/Development/personal/wow%20addon%20suite/tests/wow_api_mock.lua)) to allow running automated unit tests headlessly via standard Lua (`lua tests/run_tests.lua`).
+# Package release for CurseForge (zero-nesting release archive)
+python package.py
+```
 
 ---
 
-## 🛠️ Usage Commands
+## 📦 CurseForge Distribution
 
-- `/aui test` - Run automated diagnostic tests.
-- `/aui unlock` or `/aui move` - Toggle Interactive Edit Mode (Move & snap frames).
-- `/aui config` or `/aui options` - Open configuration settings.
-- `/aui spec` - View current spec profile status.
+Release packages are generated using the zero-nesting packaging script:
+```bash
+python package.py [--deploy "<path>/Interface/AddOns"]
+```
+Outputs: `dist/AuraUI-v<version>.zip` ready for direct upload to CurseForge or the CurseForge App.

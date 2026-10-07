@@ -7849,9 +7849,11 @@ local function ApplyCachedKeybinds()
                         kbText:SetText(key)
                         kbText:Show()
                     else
+                        kbText:SetText("")
                         kbText:Hide()
                     end
                 else
+                    kbText:SetText("")
                     kbText:Hide()
                 end
             end

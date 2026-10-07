@@ -3088,6 +3088,13 @@ initFrame:SetScript("OnEvent", function(self)
                     { type="toggle", label="Show Pet Spell Damage",
                       get=function() return GetCVarBool("floatingCombatTextPetSpellDamage_v2") end,
                       set=function(v) SetCVarSafe("floatingCombatTextPetSpellDamage_v2", v and "1" or "0") end },
+                    { type="toggle", label="Stagger Simultaneous Hits",
+                      tooltip="Spaces out simultaneous combat text hits so none overlap.",
+                      get=function() return not AuraUIDB or AuraUIDB.sctStaggerHits ~= false end,
+                      set=function(v)
+                          if not AuraUIDB then AuraUIDB = {} end
+                          AuraUIDB.sctStaggerHits = v
+                      end },
                 },
                 gap = 9, disabled = dmgOff, disabledTooltip = "Show Combat Damage Text",
             })

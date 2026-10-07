@@ -5000,3 +5000,72 @@ do
     end)
 end
 
+-------------------------------------------------------------------------------
+--  SCT Stagger Hits
+--  Spaces out simultaneous Self Combat Text hits so none overlap.
+-------------------------------------------------------------------------------
+do
+    local function IsStaggerEnabled()
+        return not AuraUIDB or AuraUIDB.sctStaggerHits ~= false
+    end
+
+    local lastHitTime = 0
+    local hitCount = 0
+    local STEP_X = 36
+
+    local function HookCombatText()
+        if not CombatText_AddMessage or _G._AUI_SCT_HOOKED then return end
+        _G._AUI_SCT_HOOKED = true
+
+        hooksecurefunc("CombatText_AddMessage", function(message, scrollFunction, r, g, b, displayType, isStaggered)
+            if not IsStaggerEnabled() then return end
+            local queue = _G.COMBAT_TEXT_TO_ANIMATE
+            if not queue or #queue == 0 then return end
+            local str = queue[#queue]
+            if not str or not str.startX or not str.endX then return end
+
+            local now = GetTime()
+            if (now - lastHitTime) < 0.25 then
+                hitCount = hitCount + 1
+            else
+                hitCount = 0
+            end
+            lastHitTime = now
+
+            if hitCount > 0 then
+                local sign = (hitCount % 2 == 1) and 1 or -1
+                local step = math.ceil(hitCount / 2)
+                local offset = sign * step * STEP_X
+                str.startX = str.startX + offset
+                str.endX = str.endX + offset
+                if str.GetNumPoints and str:GetNumPoints() > 0 then
+                    local point, relTo, relPoint, x, y = str:GetPoint(1)
+                    if point and x then
+                        str:SetPoint(point, relTo, relPoint, x + offset, y)
+                    end
+                end
+            end
+        end)
+    end
+
+    local qolNS = AuraUI and AuraUI._ModuleNS and AuraUI._ModuleNS["AuraUIQoL"]
+    if qolNS then
+        qolNS.HookCombatText = HookCombatText
+        qolNS.IsSCTStaggerEnabled = IsStaggerEnabled
+    end
+
+    if _G.CombatText_AddMessage then
+        HookCombatText()
+    else
+        local f = CreateFrame("Frame")
+        f:RegisterEvent("ADDON_LOADED")
+        f:RegisterEvent("PLAYER_LOGIN")
+        f:SetScript("OnEvent", function(self, event, addonName)
+            if addonName == "Blizzard_CombatText" or _G.CombatText_AddMessage then
+                self:UnregisterAllEvents()
+                HookCombatText()
+            end
+        end)
+    end
+end
+

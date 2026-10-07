@@ -181,6 +181,58 @@ check("tooltipPlayerBuffs" in bs_code and "_ttUpdatePlayerBuffs" in bs_code, "Bl
 with open("AuraUIOptions/AUI_BlizzardSkin_Options.lua", "r", encoding="utf-8") as f:
     bs_opt_code = f.read()
 check("Show Player Buffs" in bs_opt_code and "Buffs Position" in bs_opt_code, "BlizzardSkin player buffs options active")
+print("\n9. Verifying Group C Upstream Sync Features...")
+with open("AuraUIOptions/AUI_RaidFrames_Options.lua", "r", encoding="utf-8") as f:
+    rf_opt = f.read()
+check('"DOWN_THEN_RIGHT"' in rf_opt and 'Down and then Right' in rf_opt, "Raid Frames Down and then Right growth option active")
+
+with open("AuraUIRaidFrames/AuraUIRaidFrames.lua", "r", encoding="utf-8") as f:
+    rf_code = f.read()
+check("isGridDownRight" in rf_code and "DOWN_THEN_RIGHT" in rf_code, "Raid Frames 2D grid Down then Right layout logic active")
+
+with open("AuraUIOptions/AUI_RaidFrames_ManagerPages.lua", "r", encoding="utf-8") as f:
+    rf_mgr = f.read()
+check("DM_GetCoveringIndicator" in rf_mgr and "DM_CoveredShowLockedFn" in rf_mgr, "Raid Frames Debuff Manager covering indicator dimming active")
+
+with open("AuraUIMinimap/AuraUIMinimap.lua", "r", encoding="utf-8") as f:
+    mm_code = f.read()
+check('p.shape == "circle"' in mm_code and 'p.shape == "textured_circle"' in mm_code and "isRound" in mm_code, "Minimap round button arc curve active")
+
+with open("AuraUICooldownManager/AuraUICooldownManager.lua", "r", encoding="utf-8") as f:
+    cdm_code = f.read()
+check('kbText:SetText("")' in cdm_code, "Cooldown Manager keybind text clearing active")
+
+with open("AuraUICooldownManager/AuraUICdmHooks.lua", "r", encoding="utf-8") as f:
+    cdm_hooks = f.read()
+check('ns.UpdateCDMKeybinds' in cdm_hooks and 'fd.keybindText:SetText("")' in cdm_hooks, "Cooldown Manager OnHide and decoration keybind resync active")
+
+with open("AuraUIOptions/AUI__General_Options.lua", "r", encoding="utf-8") as f:
+    gen_opt = f.read()
+check("sctStaggerHits" in gen_opt and "Stagger Simultaneous Hits" in gen_opt, "SCT Stagger Hits options toggle active")
+
+with open("AuraUIQoL/AuraUIQoL.lua", "r", encoding="utf-8") as f:
+    qol_code2 = f.read()
+check("sctStaggerHits" in qol_code2 and "HookCombatText" in qol_code2 and "CombatText_AddMessage" in qol_code2, "QoL SCT Stagger Hits runtime hook active")
+print("\n10. Verifying CurseForge Moderation & Packaging Compliance...")
+check(os.path.exists("package.py"), "Root package.py packager script exists")
+check(os.path.exists(".agents/skills/auraui-qa-packager/scripts/package.py"), "Skill package.py packager script exists")
+
+avatar_path = "dist/AuraUI-Avatar-400x400.png"
+check(os.path.exists(avatar_path), "CurseForge 400x400 project avatar exists")
+if os.path.exists(avatar_path):
+    try:
+        from PIL import Image
+        with Image.open(avatar_path) as im:
+            check(im.size == (400, 400) and im.format == "PNG", "Project avatar is verified 400x400 PNG")
+    except ImportError:
+        pass
+
+check(os.path.exists("project_docs/CURSEFORGE_PROJECT_DESCRIPTION.md"), "CurseForge project description template exists")
+check(os.path.exists("project_docs/CURSEFORGE_MODERATION_AND_PACKAGING_PLAN.md"), "CurseForge moderation compliance plan exists")
+
+with open("README.md", "r", encoding="utf-8") as f:
+    readme_text = f.read()
+check("file:///" not in readme_text, "README.md has zero broken local file:/// URLs")
 
 print("\n==================================================================")
 print(f"Diagnostic Results: {passed} Passed, {failed} Failed")

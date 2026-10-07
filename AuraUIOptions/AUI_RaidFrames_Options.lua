@@ -1108,8 +1108,9 @@ initFrame:SetScript("OnEvent", function(self)
         UP    = "Up",
         RIGHT = "Right",
         LEFT  = "Left",
+        DOWN_THEN_RIGHT = "Down and then Right",
     }
-    local allGrowthOrder        = { "DOWN", "UP", "RIGHT", "LEFT" }
+    local allGrowthOrder        = { "DOWN", "UP", "RIGHT", "LEFT", "DOWN_THEN_RIGHT" }
 
     -- ns._RFGrowthIsVertical is the runtime module's single source of truth for
     -- this check (AuraUIRaidFrames.lua); reuse it here rather than a second copy.

@@ -3280,7 +3280,8 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
         -- with the map, plus Distance from Map), starting at the row's corner and
         -- walking round in its growth direction; Icon Spacing becomes the arc gap.
         local arcR, arcT, arcDir
-        if blizzHdr then
+        local isRound = blizzHdr or (p.shape == "circle") or (p.shape == "textured_circle")
+        if isRound then
             local mapW = minimap:GetWidth() or 140
             arcR = mapW / 2 + 5 * (mapW / 198) + (p.btnRowDistance or 0)
             arcT = math.rad(rowMode.arc or 225)
@@ -3302,7 +3303,7 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
         -- look -- ours dressed by EBS._ClassicRingButton, addon buttons in
         -- their own native dress (the common minimap-button library draws
         -- exactly that look).
-        if arcR then EBS._ClassicRingButton(flyoutToggle, 0.12, flyoutToggle._norm, flyoutToggle._pushed, flyoutToggle._hl) end
+        if blizzHdr then EBS._ClassicRingButton(flyoutToggle, 0.12, flyoutToggle._norm, flyoutToggle._pushed, flyoutToggle._hl) end
         -- WoW Forever: a row starting at the bottom-left corner starts past
         -- the queue eye Action Bars parks there (half the 45px eye, the gap
         -- and half a ring button, as arc length).

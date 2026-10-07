@@ -9931,7 +9931,11 @@ ns._LayoutGroupsImpl = function()
 
         -- Step between adjacent group origins along the growth axis
         local stepX, stepY = 0, 0
-        if groupGrowth == "DOWN" then
+        local isGridDownRight = (groupGrowth == "DOWN_THEN_RIGHT")
+        if isGridDownRight then
+            stepX = (groupW + gs)
+            stepY = -(groupH + gs)
+        elseif groupGrowth == "DOWN" then
             stepY = -(groupH + gs)
         elseif groupGrowth == "UP" then
             stepY = (groupH + gs)
@@ -9943,11 +9947,16 @@ ns._LayoutGroupsImpl = function()
 
         -- Normalize for UP/LEFT growth so slot 0 stays within container bounds
         local minX, maxY = 0, 0
-        for i = 0, MOVER_GROUPS - 1 do
-            local px = i * stepX
-            local py = i * stepY
-            if px < minX then minX = px end
-            if py > maxY then maxY = py end
+        if isGridDownRight then
+            minX = 0
+            maxY = 0
+        else
+            for i = 0, MOVER_GROUPS - 1 do
+                local px = i * stepX
+                local py = i * stepY
+                if px < minX then minX = px end
+                if py > maxY then maxY = py end
+            end
         end
 
         -- For UP/LEFT unit growth, pin each header by the corner its units
@@ -9982,8 +9991,16 @@ ns._LayoutGroupsImpl = function()
                 if vg[group] == false or (occupied and not occupied[group]) then
                     if hdr:IsShown() then hdr:Hide() end
                 else
-                    local x = PixelSnap(visSlot * stepX - minX + hdrOffX)
-                    local y = PixelSnap(visSlot * stepY - maxY + hdrOffY)
+                    local x, y
+                    if isGridDownRight then
+                        local col = math.floor(visSlot / 2)
+                        local row = visSlot % 2
+                        x = PixelSnap(col * stepX + hdrOffX)
+                        y = PixelSnap(row * stepY + hdrOffY)
+                    else
+                        x = PixelSnap(visSlot * stepX - minX + hdrOffX)
+                        y = PixelSnap(visSlot * stepY - maxY + hdrOffY)
+                    end
                     visSlot = visSlot + 1
 
                     hdr:ClearAllPoints()
@@ -10036,7 +10053,11 @@ ns._LayoutGroupsImpl = function()
             totalH = MOVER_GROUPS * groupH + (MOVER_GROUPS - 1) * gs
         end
     else
-        if groupGrowth == "DOWN" or groupGrowth == "UP" then
+        if groupGrowth == "DOWN_THEN_RIGHT" then
+            local cols = math.ceil(MOVER_GROUPS / 2)
+            totalW = cols * groupW + (cols - 1) * gs
+            totalH = 2 * groupH + gs
+        elseif groupGrowth == "DOWN" or groupGrowth == "UP" then
             totalW = groupW
             totalH = MOVER_GROUPS * groupH + (MOVER_GROUPS - 1) * gs
         else
@@ -10511,7 +10532,10 @@ ns._RFFootprint = function(bw, bh, unitGrowth, groupGrowth, cs, gs)
         groupW = bw
         groupH = 5 * bh + 4 * cs
     end
-    if groupGrowth == "DOWN" or groupGrowth == "UP" then
+    if groupGrowth == "DOWN_THEN_RIGHT" then
+        local cols = math.ceil(MOVER_GROUPS / 2)
+        return PixelSnap(cols * groupW + (cols - 1) * gs), PixelSnap(2 * groupH + gs)
+    elseif groupGrowth == "DOWN" or groupGrowth == "UP" then
         return PixelSnap(groupW), PixelSnap(MOVER_GROUPS * groupH + (MOVER_GROUPS - 1) * gs)
     end
     return PixelSnap(MOVER_GROUPS * groupW + (MOVER_GROUPS - 1) * gs), PixelSnap(groupH)
@@ -17901,7 +17925,11 @@ local function RefreshPreview()
 
     -- Group step along growth axis
     local stepX, stepY = 0, 0
-    if groupGrowth == "DOWN" then
+    local isGridDownRight = (groupGrowth == "DOWN_THEN_RIGHT")
+    if isGridDownRight then
+        stepX = (groupW + gs)
+        stepY = -(groupH + gs)
+    elseif groupGrowth == "DOWN" then
         stepY = -(groupH + gs)
     elseif groupGrowth == "UP" then
         stepY = (groupH + gs)
@@ -17914,11 +17942,21 @@ local function RefreshPreview()
     -- Raw group positions + normalize
     local rawGX, rawGY = {}, {}
     local minGX, maxGY = 0, 0
-    for i = 0, 3 do
-        rawGX[i] = i * stepX
-        rawGY[i] = i * stepY
-        if rawGX[i] < minGX then minGX = rawGX[i] end
-        if rawGY[i] > maxGY then maxGY = rawGY[i] end
+    if isGridDownRight then
+        for i = 0, 3 do
+            local col = math.floor(i / 2)
+            local row = i % 2
+            rawGX[i] = col * stepX
+            rawGY[i] = row * stepY
+        end
+        minGX, maxGY = 0, 0
+    else
+        for i = 0, 3 do
+            rawGX[i] = i * stepX
+            rawGY[i] = i * stepY
+            if rawGX[i] < minGX then minGX = rawGX[i] end
+            if rawGY[i] > maxGY then maxGY = rawGY[i] end
+        end
     end
 
     -- Unit step within a group
@@ -17958,7 +17996,11 @@ local function RefreshPreview()
 
     -- Container size (4 groups)
     local totalW, totalH
-    if groupGrowth == "DOWN" or groupGrowth == "UP" then
+    if groupGrowth == "DOWN_THEN_RIGHT" then
+        local cols = math.ceil(MOVER_GROUPS / 2)
+        totalW = cols * groupW + (cols - 1) * gs
+        totalH = 2 * groupH + gs
+    elseif groupGrowth == "DOWN" or groupGrowth == "UP" then
         totalW = groupW
         totalH = MOVER_GROUPS * groupH + (MOVER_GROUPS - 1) * gs
     else
@@ -18446,7 +18488,11 @@ ns._ShowSizePreview = function(tier)
 
     -- Step between groups along groupGrowth axis
     local stepX, stepY = 0, 0
-    if groupGrowth == "DOWN" then       stepY = -(groupH + gs)
+    local isGridDownRight = (groupGrowth == "DOWN_THEN_RIGHT")
+    if isGridDownRight then
+        stepX = (groupW + gs)
+        stepY = -(groupH + gs)
+    elseif groupGrowth == "DOWN" then   stepY = -(groupH + gs)
     elseif groupGrowth == "UP" then     stepY = (groupH + gs)
     elseif groupGrowth == "RIGHT" then  stepX = (groupW + gs)
     else                                stepX = -(groupW + gs)
@@ -18515,11 +18561,15 @@ ns._ShowSizePreview = function(tier)
 
     -- Normalize origin over MOVER_GROUPS (matching real LayoutGroups container)
     local minX, maxY = 0, 0
-    for g = 0, MOVER_GROUPS - 1 do
-        local gx = g * stepX
-        local gy = g * stepY
-        if gx < minX then minX = gx end
-        if gy > maxY then maxY = gy end
+    if isGridDownRight then
+        minX, maxY = 0, 0
+    else
+        for g = 0, MOVER_GROUPS - 1 do
+            local gx = g * stepX
+            local gy = g * stepY
+            if gx < minX then minX = gx end
+            if gy > maxY then maxY = gy end
+        end
     end
 
     local groupOrder = s.customGroupOrder and not s.mergeGroups
@@ -18558,7 +18608,7 @@ ns._ShowSizePreview = function(tier)
             local power = CreateFrame("StatusBar", nil, f)
             power:SetPoint("BOTTOMLEFT")
             power:SetPoint("BOTTOMRIGHT")
-            power:SetMinMaxValues(0, 1)
+            power:SetMinMaxValues(0, 100)
             power:SetValue(1)
             if PP then PP.DisablePixelSnap(power) end
             f._power = power
@@ -18643,8 +18693,16 @@ ns._ShowSizePreview = function(tier)
 
         -- Group origin (TOPLEFT-relative, adjusted for growth direction)
         local displaySlot = sizePreviewSlotByGroup and sizePreviewSlotByGroup[groupIdx + 1] or groupIdx
-        local gx = displaySlot * stepX - minX
-        local gy = displaySlot * stepY - maxY
+        local gx, gy
+        if isGridDownRight then
+            local col = math.floor(displaySlot / 2)
+            local row = displaySlot % 2
+            gx = col * stepX
+            gy = row * stepY
+        else
+            gx = displaySlot * stepX - minX
+            gy = displaySlot * stepY - maxY
+        end
 
         -- Unit offset within group (TOPLEFT-normalized, matching RefreshPreview)
         local ux = unitIdx * uStepX - minUX

@@ -1,4 +1,4 @@
-﻿if AUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (AuraUI_ClientGate.lua)
+if AUI_CLIENT_BLOCKED then return end -- pre-12.1 client failsafe (AuraUI_ClientGate.lua)
 -- AUI_RaidFrames_ManagerPages.lua
 -- 12.1 redesigned manager options: the Debuff Manager page (sidebar of
 -- tiles with the undeletable Base Icons tile first) plus the Buff Manager v2
@@ -136,16 +136,76 @@ local TILE_FILTER_ITEMS = {
     { key = "dispel_typed", label = "Dispels",
       tooltip = "Any debuff with a dispel type (Magic, Curse, Disease, Poison, Bleed), even if you cannot remove it." },
 }
+local function DM_GetIndicatorName(tile)
+    if not tile then return L("Base Icons") end
+    return tile.name or L(TYPE_NAMES[tile.type] or tile.type)
+end
+
+local function DM_GetCoveringIndicator(cat, currentTile)
+    local dm = DmTable()
+    if not dm then return nil end
+    -- Check active tiles in current editing spec / active view
+    local tiles = ns.DM_ActiveTiles and ns.DM_ActiveTiles()
+    if tiles then
+        for i = 1, #tiles do
+            local other = tiles[i]
+            if other.enabled ~= false and (not currentTile or other.id ~= currentTile.id) then
+                if other.all == true then
+                    return DM_GetIndicatorName(other)
+                end
+                if other.claim and other.claim[cat] then
+                    return DM_GetIndicatorName(other)
+                end
+            end
+        end
+    end
+    -- Check Base Icons grid if currentTile is not base
+    if currentTile and currentTile ~= "base" then
+        if dm.all ~= false then
+            return L("Base Icons")
+        elseif dm[cat] == true then
+            return L("Base Icons")
+        end
+    end
+    return nil
+end
+
+local function DM_CoveredShowLockedFn(item, currentTile)
+    return function()
+        local cov = DM_GetCoveringIndicator(item.key, currentTile)
+        return cov ~= nil
+    end
+end
+
+local function DM_CoveredShowLockedTooltip(item, currentTile)
+    return function()
+        local cov = DM_GetCoveringIndicator(item.key, currentTile)
+        if cov then
+            return AuraUI.Lf("Already shown by %1$s", cov)
+        end
+        return nil
+    end
+end
+
 -- Single-lane filter checkbox dropdown for per-filter ICON EFFECTS blocks
 -- (`claim` is the effect entry's claim-shaped target set). The two dispel
 -- entries are mutually exclusive and steer dm.dispelMode. Tile dropdowns use
 -- the full two-lane build below instead.
-local function BuildFilterCBDropdown(rgn, claim, dm)
+local function BuildFilterCBDropdown(rgn, claim, dm, ownerTile)
     local PP = AuraUI.PP or AuraUI.PanelPP
     if rgn._control then rgn._control:Hide() end
+    local items = {}
+    for i = 1, #TILE_FILTER_ITEMS do
+        local orig = TILE_FILTER_ITEMS[i]
+        local item = {}
+        for k, v in pairs(orig) do item[k] = v end
+        item.showLockedFn = DM_CoveredShowLockedFn(item, ownerTile)
+        item.showLockedTooltip = DM_CoveredShowLockedTooltip(item, ownerTile)
+        items[#items + 1] = item
+    end
     local cbDD = AuraUI.BuildVisOptsCBDropdown(
         rgn, 190, rgn:GetFrameLevel() + 2,
-        TILE_FILTER_ITEMS,
+        items,
         function(k)
             if k == "dispel_you" then
                 return (claim.dispel and true or false) and dm.dispelMode ~= "typed"
@@ -246,9 +306,20 @@ local function BuildTileFiltersDD(rgn, t, dm)
     if not t.claim then t.claim = {} end
     local claim = t.claim
     local function NegHas(cat) return t.neg ~= nil and t.neg[cat] == true end
+    local items = {}
+    for i = 1, #TILE_LANE_ITEMS do
+        local orig = TILE_LANE_ITEMS[i]
+        local item = {}
+        for k, v in pairs(orig) do item[k] = v end
+        if item.dual then
+            item.showLockedFn = DM_CoveredShowLockedFn(item, t)
+            item.showLockedTooltip = DM_CoveredShowLockedTooltip(item, t)
+        end
+        items[#items + 1] = item
+    end
     local cbDD = AuraUI.BuildVisOptsCBDropdown(
         rgn, 190, rgn:GetFrameLevel() + 2,
-        TILE_LANE_ITEMS,
+        items,
         function(k, neg)
             if k == TILE_CA_ALL then return t.all == true end
             if k == TILE_CA_DUR then return t.hasDuration == true end
