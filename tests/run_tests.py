@@ -5,7 +5,9 @@ import sys
 import glob
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
-    sys.stdout.reconfigure(encoding='utf-8')
+    reconfigure_stdout = getattr(sys.stdout, "reconfigure", None)
+    if callable(reconfigure_stdout):
+        reconfigure_stdout(encoding="utf-8")
 
 print("==================================================================")
 print("[TEST RUNNER] AuraUI Comprehensive Diagnostic Suite (WoW: Forever)")
@@ -14,7 +16,7 @@ print("==================================================================")
 passed = 0
 failed = 0
 
-def check(condition, desc):
+def check(condition: bool, desc: str) -> None:
     global passed, failed
     if condition:
         passed += 1
