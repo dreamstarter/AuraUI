@@ -18,6 +18,9 @@
 -- Fail-open by design: if the interface number cannot be read as a number,
 -- the suite runs normally -- the failsafe must never break a healthy client.
 -- On 12.1+ this file is two comparisons and exits; no globals, no frames.
+if not issecretvalue then
+    _G.issecretvalue = function() return false end
+end
 
 local iface = select(4, GetBuildInfo())
 if type(iface) ~= "number" then return end

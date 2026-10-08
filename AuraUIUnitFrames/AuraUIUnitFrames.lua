@@ -8,6 +8,7 @@ local math_floor, math_ceil, math_max, math_min, math_abs =
     math.floor, math.ceil, math.max, math.min, math.abs
 local string_format = string.format
 local issecretvalue = issecretvalue
+local issecretvalue = issecretvalue or function() return false end
 
 local PP = AuraUI.PP
 
@@ -4650,6 +4651,9 @@ local function ApplyFramePosition(frame, unit)
     end
     frame:ClearAllPoints()
     frame:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, x, y)
+    local pt = pos.point or "CENTER"
+    local rpt = pos.relPoint or pt
+    frame:SetPoint(pt, UIParent, rpt, x or 0, y or 0)
 end
 
 -- Clip container for health + power bars: prevents sub-pixel overflow at UI scales
@@ -10492,6 +10496,8 @@ local function CreateCustomClassPower(playerFrame, style)
             -- Clean-value path
             for i = 1, #pips do
                 if pips[i] then
+                
+... [truncated for diff preview]
                     if pips[i]._secretBar then pips[i]._secretBar:Hide() end
                     if pips[i]._fill then
                         if i <= cur then
@@ -17991,7 +17997,7 @@ local function RegisterUFUnlockElements()
                 -- Blizzard Style: the holder carries the layout aspect (see
                 -- ns.UF_CastbarAspectTemplate), so the mover cannot anchor to
                 -- it and takes the same screen spot by absolute anchor.
-                detachedMover = (ns.UF_Blizz() and ns.UF_LayoutAspectOK()) or nil,
+                detachedMover = (ns.UF_Blizz() and true) or nil,
                 isHidden = function()
                     -- Live show/hide: mirror the per-unit cast bar enable setting
                     -- (player defaults off; target/focus default on). The mover is

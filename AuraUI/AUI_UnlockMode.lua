@@ -2243,6 +2243,7 @@ local function HookFrameSizeChanged(key)
     if not _sizeHookedFrames[bar] then
         _sizeHookedFrames[bar] = true
         bar:HookScript("OnSizeChanged", function()
+        pcall(bar.HookScript, bar, "OnSizeChanged", function()
             if isUnlocked then return end
             AuraUI.NotifyElementResized(key)
         end)
@@ -2250,6 +2251,7 @@ local function HookFrameSizeChanged(key)
     if not _pointHookedFrames[bar] then
         _pointHookedFrames[bar] = true
         hooksecurefunc(bar, "SetPoint", function()
+        pcall(hooksecurefunc, bar, "SetPoint", function()
             NotifyElementMoved(key)
         end)
     end
@@ -2376,6 +2378,7 @@ function RejectH.ShowTooltip(text)
     RejectH._anchor:ClearAllPoints()
     RejectH._anchor:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", mx / sc, my / sc)
     AuraUI.ShowWidgetTooltip(RejectH._anchor, text, {})
+    AuraUI.ShowWidgetTooltip(RejectH._anchor, AuraUI.L(text), {})
     local elapsed = 0
     RejectH._timer:SetScript("OnUpdate", function(self, dt)
         elapsed = elapsed + dt
@@ -6234,6 +6237,16 @@ local function AttachMoverToBar(m, bar, key, il, it)
         return
     end
     m:SetPoint("TOPLEFT", bar, "TOPLEFT", il or 0, -(it or 0))
+    local ok = pcall(m.SetPoint, m, "TOPLEFT", bar, "TOPLEFT", il or 0, -(it or 0))
+    if not ok then
+        local bL, bT = bar:GetLeft(), bar:GetTop()
+        if not (issecretvalue and (issecretvalue(bL) or issecretvalue(bT))) and bL and bT then
+            local r = bar:GetEffectiveScale() / UIParent:GetEffectiveScale()
+            m:SetPoint("TOPLEFT", UIParent, "TOPLEFT", bL * r + (il or 0), bT * r - UIParent:GetHeight() - (it or 0))
+        else
+            m:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+        end
+    end
 end
 -- CreateMover is at Lua's 60-upvalue cap: its closures call this through the
 -- namespace table (already an upvalue there), like NudgeMover below.
@@ -7426,6 +7439,7 @@ local function CreateMover(barKey)
         end
         if isBlocked then
             AuraUI.ShowWidgetTooltip(btn, "This element doesn't support both Height and Width matching")
+            AuraUI.ShowWidgetTooltip(btn, AuraUI.L("This element doesn't support both Height and Width matching"))
             return
         end
         fs:SetTextColor(1, 1, 1, 1)
@@ -8246,6 +8260,10 @@ local function CreateMover(barKey)
                 self:SetPoint("TOPLEFT", UIParent, "TOPLEFT", snap0X - halfW0, snap0Y + halfH0 - UIParent:GetHeight())
             else
                 self:SetPoint("TOPLEFT", bar0, "TOPLEFT", self._dragIL, -self._dragIT)
+                local ok = pcall(self.SetPoint, self, "TOPLEFT", bar0, "TOPLEFT", self._dragIL, -self._dragIT)
+                if not ok then
+                    self:SetPoint("TOPLEFT", UIParent, "TOPLEFT", snap0X - halfW0, snap0Y + halfH0 - UIParent:GetHeight())
+                end
             end
         else
             local f0X = snap0X - halfW0
@@ -8331,6 +8349,10 @@ local function CreateMover(barKey)
                     s:SetPoint("TOPLEFT", UIParent, "TOPLEFT", snapCX - halfW, snapCY + halfH - UIParent:GetHeight())
                 else
                     s:SetPoint("TOPLEFT", bar, "TOPLEFT", s._dragIL, -s._dragIT)
+                    local ok = pcall(s.SetPoint, s, "TOPLEFT", bar, "TOPLEFT", s._dragIL, -s._dragIT)
+                    if not ok then
+                        s:SetPoint("TOPLEFT", UIParent, "TOPLEFT", snapCX - halfW, snapCY + halfH - UIParent:GetHeight())
+                    end
                 end
             else
                 -- No live bar -- position mover in UIParent space
@@ -9402,6 +9424,7 @@ local function CreateMover(barKey)
         if not snapEnabled then
             -- Grayed out: show tooltip explaining why
             AuraUI.ShowWidgetTooltip(self, "This feature requires Snap Elements to be enabled")
+            AuraUI.ShowWidgetTooltip(self, AuraUI.L("This feature requires Snap Elements to be enabled"))
             return
         end
         self._bg:SetColorTexture(0.075, 0.113, 0.141, 0.98)
@@ -9994,6 +10017,7 @@ local function CreateMover(barKey)
                     box:SetScript("OnEnter", function()
                         AuraUI.ShowWidgetTooltip(box,
                             axis .. " matched to " .. targetName .. ". Unmatch to edit.")
+                            AuraUI.Lf("%1$s matched to %2$s. Unmatch to edit.", AuraUI.L(axis), targetName))
                     end)
                     box:SetScript("OnLeave", function() AuraUI.HideWidgetTooltip() end)
                 end
@@ -10556,6 +10580,8 @@ local function CreateMover(barKey)
             C_Timer.After(0.15, function()
                 if not mover:IsMouseOver() and not (mover._cogBtn and mover._cogBtn:IsMouseOver()) then
                     if mover._hideOverlayText then mover._hideOverlayText() end
+                    if hoveredMover
+... [truncated for diff preview]
                     if hoveredMover == mover then hoveredMover = nil end
                     mover._hoverPending = false
                     if not mover._selected then
@@ -11039,7 +11065,7 @@ local function CreateMover(barKey)
                     if AuraUI._HasOverrideAnchor and AuraUI._HasOverrideAnchor(barKey, og.id) then
                         local gid = og.id
                         local gname = og.name or ("Group " .. tostring(gid))
-                        OvSubnavItem("Edit Override: " .. gname, function()
+                        OvSubnavItem(AuraUI.Lf("Edit Override: %1$s", gname), function()
                             return {
                                 { text = gname, title = true },
                                 { text = AuraUI.L("Edit Anchor"), fn = function()

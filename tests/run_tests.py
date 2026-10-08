@@ -236,6 +236,66 @@ with open("README.md", "r", encoding="utf-8") as f:
     readme_text = f.read()
 check("file:///" not in readme_text, "README.md has zero broken local file:/// URLs")
 
+print("\n11. Verifying Group D Upstream Sync & Unlock Mode Fixes...")
+with open("AuraUI/AuraUI_ClientGate.lua", "r", encoding="utf-8") as f:
+    cg_code = f.read()
+check("if not issecretvalue then" in cg_code and "_G.issecretvalue = function()" in cg_code, "ClientGate issecretvalue global polyfill active")
+
+with open("AuraUIUnitFrames/AuraUIUnitFrames.lua", "r", encoding="utf-8") as f:
+    uf_code = f.read()
+check("local issecretvalue = issecretvalue or function() return false end" in uf_code, "UnitFrames local issecretvalue safe fallback active")
+check('local pt = pos.point or "CENTER"' in uf_code, "UnitFrames ApplyFramePosition safe anchor fallback active")
+check("detachedMover = (ns.UF_Blizz() and true) or nil" in uf_code, "UnitFrames Blizzard Style castbar detachedMover active")
+
+with open("AuraUI/AUI_UnlockMode.lua", "r", encoding="utf-8") as f:
+    um_code = f.read()
+check('pcall(bar.HookScript, bar, "OnSizeChanged"' in um_code, "UnlockMode HookFrameSizeChanged pcall protection active")
+check("local ok = pcall(m.SetPoint, m, \"TOPLEFT\", bar" in um_code, "UnlockMode AttachMoverToBar pcall protection active")
+check('AuraUI.ShowWidgetTooltip(btn, AuraUI.L("This element doesn\'t support both Height and Width matching"))' in um_code, "UnlockMode linked dimensions tooltip translation active")
+check('AuraUI.ShowWidgetTooltip(RejectH._anchor, AuraUI.L(text)' in um_code, "UnlockMode rejection tooltip translation active")
+check('AuraUI.Lf("Edit Override: %1$s", gname)' in um_code, "UnlockMode override subnav translation active")
+
+group_d_keys = [
+    "Ignore Low Level Quests",
+    "Auto Accept can leave low level quests for you to pick up yourself.",
+    "Auto Select Single Gossip",
+    "Talking to an NPC with only one dialog option picks it for you, unless they have a quest for you.",
+    "Quest XP Overlay",
+    "Loot Feed",
+    "Track Money",
+    "Auto Uprank Spells",
+    "Enable Debuff Coloring",
+    "Coloring Target",
+    "Thicken Border while Active",
+    "Combo: 2 Debuffs",
+    "Combo: 3+ Debuffs",
+    "Show Player Buffs",
+    "Down and then Right",
+    "Stagger Simultaneous Hits",
+    "The fallback must differ from\\nthe main anchor target",
+    "An element cannot anchor to itself",
+    "Cannot anchor: elements would form an anchor loop",
+    "Fallback Anchor: Select",
+    "Fallback Anchor: Change",
+    "Fallback Anchor: Clear",
+    "%1$s matched to %2$s. Unmatch to edit.",
+    "Override Anchor",
+    "Edit Override: %1$s",
+    "Click any element\\nto match its width",
+    "Click any element\\nto match its height",
+    "Click any element\\nto anchor to it",
+]
+
+with open("AuraUILocales/zhTW.lua", "r", encoding="utf-8") as f:
+    zhtw_text = f.read()
+zhtw_missing = [k for k in group_d_keys if f'["{k}"]' not in zhtw_text]
+check(len(zhtw_missing) == 0, f"Traditional Chinese (zhTW) Group D keys complete ({len(group_d_keys) - len(zhtw_missing)}/{len(group_d_keys)})")
+
+with open("AuraUILocales/ptBR.lua", "r", encoding="utf-8") as f:
+    ptbr_text = f.read()
+ptbr_missing = [k for k in group_d_keys if f'["{k}"]' not in ptbr_text]
+check(len(ptbr_missing) == 0, f"Brazilian Portuguese (ptBR) Group D keys complete ({len(group_d_keys) - len(ptbr_missing)}/{len(group_d_keys)})")
+
 print("\n==================================================================")
 print(f"Diagnostic Results: {passed} Passed, {failed} Failed")
 print("==================================================================")
