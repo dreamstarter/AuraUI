@@ -2242,7 +2242,6 @@ local function HookFrameSizeChanged(key)
     if not bar then return end
     if not _sizeHookedFrames[bar] then
         _sizeHookedFrames[bar] = true
-        bar:HookScript("OnSizeChanged", function()
         pcall(bar.HookScript, bar, "OnSizeChanged", function()
             if isUnlocked then return end
             AuraUI.NotifyElementResized(key)
@@ -2250,7 +2249,6 @@ local function HookFrameSizeChanged(key)
     end
     if not _pointHookedFrames[bar] then
         _pointHookedFrames[bar] = true
-        hooksecurefunc(bar, "SetPoint", function()
         pcall(hooksecurefunc, bar, "SetPoint", function()
             NotifyElementMoved(key)
         end)
@@ -10016,7 +10014,6 @@ local function CreateMover(barKey)
                     local targetName = GetBarLabel(matchTarget) or matchTarget
                     box:SetScript("OnEnter", function()
                         AuraUI.ShowWidgetTooltip(box,
-                            axis .. " matched to " .. targetName .. ". Unmatch to edit.")
                             AuraUI.Lf("%1$s matched to %2$s. Unmatch to edit.", AuraUI.L(axis), targetName))
                     end)
                     box:SetScript("OnLeave", function() AuraUI.HideWidgetTooltip() end)
@@ -10580,8 +10577,6 @@ local function CreateMover(barKey)
             C_Timer.After(0.15, function()
                 if not mover:IsMouseOver() and not (mover._cogBtn and mover._cogBtn:IsMouseOver()) then
                     if mover._hideOverlayText then mover._hideOverlayText() end
-                    if hoveredMover
-... [truncated for diff preview]
                     if hoveredMover == mover then hoveredMover = nil end
                     mover._hoverPending = false
                     if not mover._selected then

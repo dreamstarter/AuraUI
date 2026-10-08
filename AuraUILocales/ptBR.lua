@@ -6130,8 +6130,6 @@ L["Include fonts, custom colours, dark mode, accent colour and UI scale with thi
 L["Include your Blizz UI Enhanced settings from the Window Skins and Tooltips, Menus & Popups tabs. These are account-wide: if the importer opts in, they overwrite that player's settings across ALL of their profiles."] = "Inclui suas configurações de Interface Blizz Aprimorada das abas Aparência de Janelas e Dicas de Ferramenta, Menus e Pop-ups. Essas configurações são de toda a conta: se quem importar optar por isso, elas substituirão as configurações desse jogador em TODOS os seus perfis."
 
 -- == Options / Font & Texture Settings Hubs ===================================
-L
-... [truncated for diff preview]
 L["A quick view of every font setting in one place."] = "Uma visão rápida de todas as configurações de fonte, em um só lugar."
 L["A quick view of every texture setting in one place."] = "Uma visão rápida de todas as configurações de textura, em um só lugar."
 L["Combat & World Text"] = "Texto de Combate e Mundo"

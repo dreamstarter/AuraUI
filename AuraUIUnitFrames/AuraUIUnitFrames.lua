@@ -10496,8 +10496,6 @@ local function CreateCustomClassPower(playerFrame, style)
             -- Clean-value path
             for i = 1, #pips do
                 if pips[i] then
-                
-... [truncated for diff preview]
                     if pips[i]._secretBar then pips[i]._secretBar:Hide() end
                     if pips[i]._fill then
                         if i <= cur then

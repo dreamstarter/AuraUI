@@ -10410,8 +10410,6 @@ function NameplateFrame:KickProtectionChanged()
         local chName
         chName, _, _, _, _, _, kp = UnitChannelInfo(self.unit)
         if type(chName) == "nil" then return end
-        kickProtec
-... [truncated for diff preview]
         kickProtected = kp
     end
     if type(kickProtected) == "nil" then kickProtected = false end

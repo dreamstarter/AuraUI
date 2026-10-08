@@ -296,6 +296,26 @@ with open("AuraUILocales/ptBR.lua", "r", encoding="utf-8") as f:
 ptbr_missing = [k for k in group_d_keys if f'["{k}"]' not in ptbr_text]
 check(len(ptbr_missing) == 0, f"Brazilian Portuguese (ptBR) Group D keys complete ({len(group_d_keys) - len(ptbr_missing)}/{len(group_d_keys)})")
 
+print("\n12. Verifying Codebase Source Integrity & Clean Syntax...")
+bad_markers = ["[truncated", "truncated for diff", "<<<<<<<", ">>>>>>>"]
+corrupted_files = []
+lua_file_count = 0
+for root, dirs, files in os.walk("."):
+    if ".git" in root or ".vscode" in root or "tests" in root:
+        continue
+    for file in files:
+        if file.endswith(".lua"):
+            lua_file_count += 1
+            fpath = os.path.join(root, file)
+            with open(fpath, "r", encoding="utf-8", errors="ignore") as fh:
+                for line_idx, line in enumerate(fh, 1):
+                    for bm in bad_markers:
+                        if bm in line:
+                            corrupted_files.append(f"{fpath}:{line_idx} contains '{bm}'")
+
+check(len(corrupted_files) == 0, f"Source code free of truncation or conflict markers (scanned {lua_file_count} files)")
+check(lua_file_count > 100, f"Full Lua suite integrity verified ({lua_file_count} modules)")
+
 print("\n==================================================================")
 print(f"Diagnostic Results: {passed} Passed, {failed} Failed")
 print("==================================================================")

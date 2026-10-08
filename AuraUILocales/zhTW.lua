@@ -5689,8 +5689,6 @@ L["Chat Outline Mode"]             = "聊天外框模式"
 L["Chat Rewrite"]                  = "聊天重寫"
 L["Chat windows, tabs and the input field"] = "聊天視窗、頁籤與輸入框"
 L["Chi"]                           = "真氣"
-L["Chonky Character Sheet conflicts with the AuraUI's Character Sheet. Disable either Chonky or the Character Sheet skin in Blizzard UI Enhanced settings."] = "Chonky Character Sheet 與 AuraUI 的角色面板衝突。請停用 Chonky，或在「暴雪介面增強」設定
-... [truncated for diff preview]
 L["Chonky Character Sheet conflicts with the AuraUI's Character Sheet. Disable either Chonky or the Character Sheet skin in Blizzard UI Enhanced settings."] = "Chonky Character Sheet 與 AuraUI 的角色面板衝突。請停用 Chonky，或在「暴雪介面增強」設定中停用角色面板外觀。"
 L["Choose which addons to import. Any addons not included will use your active profile's settings in the new profile."] = "選擇要匯入的插件。未包含的插件將在新設定檔中沿用您使用中設定檔的設定。"
 L["CHOOSE YOUR LOOK"]              = "選擇你的外觀"

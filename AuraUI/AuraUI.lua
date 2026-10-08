@@ -10532,8 +10532,6 @@ local function CreateMainFrame()
             smoothFrame:Hide()
             return
         end
-        local newScroll 
-... [truncated for diff preview]
         local newScroll = cur + diff * math.min(1, SMOOTH_SPEED * elapsed)
         -- Clamp to valid range
         newScroll = math.max(0, math.min(maxScroll, newScroll))
