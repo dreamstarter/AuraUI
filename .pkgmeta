@@ -1,0 +1,47 @@
+package-as: AuraUI
+
+enable-nolib-creation: no
+
+manual-changelog:
+  filename: project_docs/patch_notes.md
+  markup: markdown
+
+move-folders:
+  AuraUI: AuraUI
+  AuraUIActionBars: AuraUIActionBars
+  AuraUIAuraBuffReminders: AuraUIAuraBuffReminders
+  AuraUIBags: AuraUIBags
+  AuraUIBlizzardSkin: AuraUIBlizzardSkin
+  AuraUIChat: AuraUIChat
+  AuraUICooldownManager: AuraUICooldownManager
+  AuraUIDamageMeters: AuraUIDamageMeters
+  AuraUIDataBars: AuraUIDataBars
+  AuraUIForeverEssentials: AuraUIForeverEssentials
+  AuraUIFriends: AuraUIFriends
+  AuraUILocales: AuraUILocales
+  AuraUIMinimap: AuraUIMinimap
+  AuraUIMythicTimer: AuraUIMythicTimer
+  AuraUINameplates: AuraUINameplates
+  AuraUIOptions: AuraUIOptions
+  AuraUIQoL: AuraUIQoL
+  AuraUIQuestTracker: AuraUIQuestTracker
+  AuraUIQuickdraw: AuraUIQuickdraw
+  AuraUIRaidFrames: AuraUIRaidFrames
+  AuraUIResourceBars: AuraUIResourceBars
+  AuraUIUnitFrames: AuraUIUnitFrames
+
+ignore:
+  - .git
+  - .github
+  - .vscode
+  - .agents
+  - .tools
+  - .wowluarc.json
+  - tests
+  - project_docs
+  - dist
+  - release
+  - .release
+  - package.py
+  - AGENTS.md
+  - README.md

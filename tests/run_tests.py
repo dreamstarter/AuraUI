@@ -243,6 +243,9 @@ if os.path.exists(avatar_path):
 
 check(os.path.exists("project_docs/CURSEFORGE_PROJECT_DESCRIPTION.md"), "CurseForge project description template exists")
 check(os.path.exists("project_docs/CURSEFORGE_MODERATION_AND_PACKAGING_PLAN.md"), "CurseForge moderation compliance plan exists")
+check(os.path.exists(".pkgmeta"), "BigWigs .pkgmeta configuration exists")
+check(os.path.exists(".github/workflows/release.yml"), "GitHub Actions release CI/CD workflow exists")
+check(os.path.exists(".tools/release.sh") and os.path.exists(".tools/release.bat"), "Local cross-platform release scripts exist")
 
 with open("README.md", "r", encoding="utf-8") as f:
     readme_text = f.read()

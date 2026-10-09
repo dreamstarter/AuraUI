@@ -41,3 +41,14 @@ Optional target directory to deploy directly to a local WoW client:
 ```powershell
 python package.py --deploy "D:/World of Warcraft/_retail_/Interface/AddOns"
 ```
+
+---
+
+## 3. BigWigs Packager & GitHub Actions CI/CD Pipeline
+
+AuraUI provides full parity with the BigWigsMods packager ecosystem:
+- **Root `.pkgmeta`**: Configures `move-folders` for all 22 suite modules to ensure zero nesting, defines developer ignore rules, and points to `manual-changelog: project_docs/patch_notes.md`.
+- **GitHub Actions Workflow** (`.github/workflows/release.yml`): Automatically triggered when a git tag (`v*`) is pushed. Runs `tests/run_tests.py` first, then deploys release archives to CurseForge, Wago, and GitHub Releases via `BigWigsMods/packager@v2`.
+- **Local Release Scripts**:
+  - Windows: `.tools\release.bat` (runs diagnostics and launches packaging).
+  - Linux / macOS / Git Bash: `.tools/release.sh` (fetches pinned BigWigs packager `v2.6.1` for dry runs into `.release/`).
