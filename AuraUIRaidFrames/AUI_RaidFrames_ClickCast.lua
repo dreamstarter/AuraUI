@@ -151,10 +151,10 @@ end
 local _rezNames
 local function RezNameSet()
     if _rezNames then return _rezNames end
-    if not (C_Spell and C_Spell.GetSpellName) then return nil end
     local set, resolved = {}, false
     for sid in pairs(REZ_SPELL_IDS) do
-        local n = C_Spell.GetSpellName(sid)
+        local n = (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(sid))
+            or (GetSpellInfo and GetSpellInfo(sid))
         if n then set[n] = true; resolved = true end
     end
     -- Only latch the cache once something resolved: spell data can be cold this
@@ -305,6 +305,7 @@ local function IsFrameBinding(binding)
 end
 
 function ns.CC_GetBindingUnitType(binding)
+    if binding.type == "dynamicrez" then return "friendly" end
     local friendly, enemy = binding.hoverFriendly, binding.hoverEnemy
     if friendly == false and enemy == false then return "none" end
     -- The Friendly checkbox is default-on in the UI, so an omitted value is
@@ -320,7 +321,8 @@ end
 -- checkboxes select opposite reactions. Combine those branches into one macro.
 local function IsReactionBinding(binding)
     return binding and (binding.type == "spell" or binding.type == "item"
-        or (binding.type == "macro" and binding.hovercast))
+        or (binding.type == "macro" and binding.hovercast)
+        or binding.type == "dynamicrez")
 end
 
 local function IsBindingActive(binding)
@@ -359,6 +361,10 @@ local function IsBindingKnown(binding)
         return binding.harmfulSpellID ~= nil and IsSpellIDKnown(binding.harmfulSpellID)
     elseif binding.type == "reaction" then
         return IsBindingKnown(binding.friendlyAction) or IsBindingKnown(binding.harmfulAction)
+    elseif binding.type == "dynamicrez" then
+        local _, pClass = UnitClass("player")
+        local kit = REZ_BY_CLASS[pClass]
+        return kit ~= nil
     end
     return true
 end
@@ -366,8 +372,11 @@ end
 function ns.CC_AreComplementaryReactionBindings(a, b)
     if not IsReactionBinding(a) or not IsReactionBinding(b)
         or a.key ~= b.key or a.harmfulSpell or b.harmfulSpell then return false end
-    if not ((a.type == "spell" and (b.type == "spell" or b.type == "item"))
-        or (a.type == "item" and b.type == "spell")) then return false end
+    local aType, bType = a.type, b.type
+    local aValid = (aType == "spell" or aType == "item" or aType == "dynamicrez")
+    local bValid = (bType == "spell" or bType == "item" or bType == "dynamicrez")
+    if not (aValid and bValid) then return false end
+    if aType == "dynamicrez" and bType == "dynamicrez" then return false end
     if not ((IsFrameBinding(a) and IsFrameBinding(b))
         or (IsHoverBinding(a) and IsHoverBinding(b)))
         or (a.oocOnly or false) ~= (b.oocOnly or false) then return false end
@@ -377,7 +386,10 @@ function ns.CC_AreComplementaryReactionBindings(a, b)
 end
 
 function ns.CC_AreComplementarySpellBindings(a, b)
-    if not a or not b or a.type ~= "spell" or b.type ~= "spell" then return false end
+    if not a or not b then return false end
+    local aValid = (a.type == "spell" or a.type == "dynamicrez")
+    local bValid = (b.type == "spell" or b.type == "dynamicrez")
+    if not (aValid and bValid) then return false end
     return ns.CC_AreComplementaryReactionBindings(a, b)
 end
 
@@ -396,7 +408,7 @@ function ns.CC_MergeComplementarySpellBindings(bindings)
                 combined.harmfulIcon = harmful.icon
                 combined.hoverFriendly = true
                 combined.hoverEnemy = true
-                combined.smartRez = friendly.smartRez or harmful.smartRez
+                combined.smartRez = friendly.smartRez or harmful.smartRez or (friendly.type == "dynamicrez")
                 result[i] = combined
                 merged = true
                 break
@@ -536,16 +548,13 @@ local function ComputeKnownSignature()
     local cc = GetClickCastDB()
     if not cc or not cc.enabled then return "" end
     wipe(sigParts)
-    for _, b in ipairs(GetSpecBindings()) do
-        if b.type == "spell" and b.key and IsBindingActive(b) then
+    local function CheckBinding(b)
+        if (b.type == "spell" or b.type == "dynamicrez") and b.key and IsBindingActive(b) then
             sigParts[#sigParts + 1] = IsBindingKnown(b) and "1" or "0"
         end
     end
-    for _, b in ipairs(cc.globals) do
-        if b.type == "spell" and b.key and IsBindingActive(b) then
-            sigParts[#sigParts + 1] = IsBindingKnown(b) and "1" or "0"
-        end
-    end
+    for _, b in ipairs(GetSpecBindings()) do CheckBinding(b) end
+    for _, b in ipairs(cc.globals) do CheckBinding(b) end
     return table.concat(sigParts)
 end
 
@@ -717,10 +726,32 @@ local function BuildRezLines(binding, guard, standalone)
     local bank = Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player
     local function Known(sid)
         if not sid then return nil end
+        local isKnown = false
         if C_SpellBook.IsSpellInSpellBook and bank then
-            if not C_SpellBook.IsSpellInSpellBook(sid, bank, true) then return nil end
+            if C_SpellBook.IsSpellInSpellBook(sid, bank, true) then
+                isKnown = true
+            else
+                local baseId = C_Spell.GetBaseSpell and C_Spell.GetBaseSpell(sid)
+                if type(baseId) == "number" and baseId > 0 and baseId ~= sid then
+                    isKnown = C_SpellBook.IsSpellInSpellBook(baseId, bank, true) and true or false
+                end
+            end
+        elseif IsSpellKnownOrOverridesKnown then
+            isKnown = IsSpellKnownOrOverridesKnown(sid)
+        elseif IsPlayerSpell then
+            isKnown = IsPlayerSpell(sid)
+        else
+            isKnown = true
         end
-        return C_Spell.GetSpellName and C_Spell.GetSpellName(sid)
+        if not isKnown and IsSpellKnownOrOverridesKnown and IsSpellKnownOrOverridesKnown(sid) then
+            isKnown = true
+        end
+        if not isKnown and IsPlayerSpell and IsPlayerSpell(sid) then
+            isKnown = true
+        end
+        if not isKnown then return nil end
+        return (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(sid))
+            or (GetSpellInfo and GetSpellInfo(sid))
     end
     local battleName = Known(kit.battle)
     local groupName  = Known(kit.group)
@@ -732,7 +763,7 @@ local function BuildRezLines(binding, guard, standalone)
     -- perfectly well, so theirs takes oocOnly's [nocombat] rather than dropping.
     -- That conditional has to live on the line: Smart Rez prepends these ahead of
     -- the base macro, and so ahead of its /stopmacro [combat].
-    local hasOOCRez = groupName or singleName
+    local hasOOCRez = singleName or groupName
     if battleName and not (hasOOCRez and binding.oocOnly) then
         local combatCond = ""
         if hasOOCRez then
@@ -742,10 +773,10 @@ local function BuildRezLines(binding, guard, standalone)
         end
         lines[#lines + 1] = "/cast [@mouseover,help,dead" .. combatCond .. guard .. "] " .. battleName
     end
-    if groupName then
-        lines[#lines + 1] = "/cast [@mouseover,help,dead,nocombat" .. guard .. "] " .. groupName
-    elseif singleName then
+    if singleName then
         lines[#lines + 1] = "/cast [@mouseover,help,dead,nocombat" .. guard .. "] " .. singleName
+    elseif groupName then
+        lines[#lines + 1] = "/cast [@mouseover,help,dead,nocombat" .. guard .. "] " .. groupName
     end
     -- Soulstone also pre-buffs a LIVING ally, which the [dead] lines above can
     -- never reach. Standalone only: Smart Rez prepends these lines to another
@@ -780,7 +811,8 @@ local function BuildBaseMacroText(binding)
                         or (reaction == "harm" and unitType ~= "friendly")
                     if not reactionEnabled then return end
                     local reactionConds = { "@mouseover", reaction }
-                    if not isRez then
+                    local isLineRez = (reaction == "help") and isRez
+                    if not isLineRez then
                         reactionConds[#reactionConds + 1] = "exists"
                         reactionConds[#reactionConds + 1] = "nodead"
                     end
@@ -859,7 +891,16 @@ local function BuildBaseMacroText(binding)
         return cmd
     elseif binding.type == "dynamicrez" then
         local lines = BuildRezLines(binding, guard, true)
-        if not lines or #lines == 0 then return nil end
+        if not lines then lines = {} end
+        if binding.harmfulSpell then
+            local harmfulName = ResolveHarmfulSpellName(binding)
+            if harmfulName then
+                local conds = { "@mouseover", "harm", "exists", "nodead" }
+                if binding.oocOnly then conds[#conds + 1] = "nocombat" end
+                lines[#lines + 1] = "/cast [" .. table.concat(conds, ",") .. guard .. "] " .. harmfulName
+            end
+        end
+        if #lines == 0 then return nil end
         if binding.oocOnly then
             table.insert(lines, 1, "/stopmacro [combat]")
         end
@@ -935,9 +976,10 @@ function ns.CC_GetBindingIcon(b)
         local _, pc = UnitClass("player")
         local kit = REZ_BY_CLASS[pc]
         if kit then
-            local sid = kit.battle or kit.group or kit.single
+            local sid = kit.battle or kit.single or kit.group
             if sid then
-                local tex = C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(sid)
+                local tex = (C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(sid))
+                    or (GetSpellTexture and GetSpellTexture(sid))
                 if tex then return tex end
             end
         end
@@ -2354,7 +2396,8 @@ function ns.CC_BuildPage(pageName, parent, yOffset)
         local kit = REZ_BY_CLASS[pClass]
         if kit then
             for _, sid in pairs(kit) do
-                local name = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(sid)
+                local name = (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(sid))
+                    or (GetSpellInfo and GetSpellInfo(sid))
                 if name then boundSpells[name] = true end
             end
         end

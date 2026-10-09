@@ -311,7 +311,19 @@ with open("AuraUILocales/ptBR.lua", "r", encoding="utf-8") as f:
 ptbr_missing = [k for k in group_d_keys if f'["{k}"]' not in ptbr_text]
 check(len(ptbr_missing) == 0, f"Brazilian Portuguese (ptBR) Group D keys complete ({len(group_d_keys) - len(ptbr_missing)}/{len(group_d_keys)})")
 
-print("\n12. Verifying Codebase Source Integrity & Clean Syntax...")
+print("\n12. Verifying Click-Cast Dynamic Rez & HoverCast Dual Keys...")
+with open("AuraUIRaidFrames/AUI_RaidFrames_ClickCast.lua", "r", encoding="utf-8") as f:
+    cc_content = f.read()
+
+check('if binding.type == "dynamicrez" then return "friendly" end' in cc_content, "dynamicrez has friendly unit type in CC_GetBindingUnitType")
+check('binding.type == "dynamicrez"' in cc_content and "IsReactionBinding" in cc_content, "dynamicrez recognized in IsReactionBinding")
+check('aType == "dynamicrez" and bType == "dynamicrez"' in cc_content, "dynamicrez checked in CC_AreComplementaryReactionBindings")
+check('a.type == "dynamicrez"' in cc_content and 'b.type == "dynamicrez"' in cc_content, "dynamicrez checked in CC_AreComplementarySpellBindings")
+check('(friendly.type == "dynamicrez")' in cc_content, "dynamicrez merged with harmful spell in CC_MergeComplementarySpellBindings")
+check('singleName then' in cc_content and 'elseif groupName then' in cc_content, "BuildRezLines prioritizes singleName over groupName")
+check('IsSpellKnownOrOverridesKnown' in cc_content and 'GetSpellInfo' in cc_content, "BuildRezLines uses multi-client safe spell and talent checks")
+
+print("\n13. Verifying Codebase Source Integrity & Clean Syntax...")
 bad_markers = ["[truncated", "truncated for diff", "<<<<<<<", ">>>>>>>"]
 corrupted_files = []
 lua_file_count = 0
