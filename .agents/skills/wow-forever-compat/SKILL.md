@@ -5,9 +5,15 @@ description: >-
   Provides API compatibility guidelines, client build quirks, safe fallback wrappers, and sound ID references to avoid runtime Lua errors.
 ---
 
-# WoW: Forever API Compatibility Guide
+# Multi-Client API & Compatibility Guide (Midnight, Forever, Mists of Pandaria)
 
-World of Warcraft: Forever operates on a hybrid Classic client base (Interface builds `11504`, `40402`, `110007`). While it supports many modern UI conveniences, several APIs differ substantially from modern Retail (Dragonflight / The War Within).
+AuraUI targets three game client environments with isolated flavor manifests:
+
+| Client Flavor | Game Type Tag | Interface Range | Primary TOC | Detected Flag |
+| :--- | :--- | :--- | :--- | :--- |
+| **WoW Midnight** | `standard` | `>= 120000` | `<Addon>.toc` | `AuraUI.IS_MIDNIGHT` |
+| **WoW: Forever** | `camelot` | `16000 - 19999` | `<Addon>_Camelot.toc` | `AuraUI.IS_FOREVER` |
+| **Mists of Pandaria** | `mists` | `50000 - 59999` | `<Addon>_Mists.toc` | `AuraUI.IS_MOP` |
 
 ---
 
@@ -90,3 +96,11 @@ end
 ## 3. Audio & Sound IDs
 
 Refer to [sound_ids.md](./references/sound_ids.md) for the complete list of verified numeric sound IDs compatible with `PlaySound(id, "Master")`.
+
+---
+
+## 4. Defensive Polyfills & Classic Textures
+
+- **`issecretvalue`**: Polyfilled in `AuraUI_ClientGate.lua` to return `false` on clients without secret value semantics.
+- **`C_Container`**: Wrapped in `AuraUI_ClientGate.lua` with fallback to `_G` functions for older Classic/MoP builds.
+- **Texture / Icon IDs**: Modern retail icon IDs (`7500000+`) do not exist on Forever or MoP Classic. Use classic file IDs (`134400...`) to prevent missing texture green squares.

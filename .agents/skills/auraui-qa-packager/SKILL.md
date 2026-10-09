@@ -25,17 +25,19 @@ AuraUI uses a dual testing approach:
 
 ## 2. Release Packaging
 
-The included `package.py` script automatically verifies tests and builds a clean release zip archive:
-- Validates the test suite first (aborts if any test fails).
-- Bundles `AuraUI` and `AuraUI_Options` into a standalone zip file in `dist/`.
-- Omits developer files (`tests/`, `project_docs/`, `.git/`, `.agents/`).
+The root `package.py` script automatically verifies tests and builds a CurseForge-compliant release zip archive:
+- Validates the test suite first (aborts if any of the 800+ diagnostic tests fail).
+- Bundles all 22 verified suite modules directly at the archive root.
+- Guarantees **zero nesting** (no outer folder wrapper) so CurseForge and WoW install directly into `Interface/AddOns/`.
+- Verifies all 61 `.toc` manifests across Midnight, Camelot (`*_Camelot.toc`), and Mists (`*_Mists.toc`).
+- Omits developer files (`tests/`, `project_docs/`, `.git/`, `.agents/`, `.vscode/`).
 
 ### Command
 ```powershell
-python .agents/skills/auraui-qa-packager/scripts/package.py
+python package.py [--deploy "path/to/Interface/AddOns"] [--skip-tests] [--version X.Y.Z]
 ```
 
 Optional target directory to deploy directly to a local WoW client:
 ```powershell
-python .agents/skills/auraui-qa-packager/scripts/package.py --deploy "D:/World of Warcraft/_retail_/Interface/AddOns"
+python package.py --deploy "D:/World of Warcraft/_retail_/Interface/AddOns"
 ```
