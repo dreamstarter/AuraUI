@@ -32,3 +32,4 @@ bash "${PACKAGER_SCRIPT}" -d -z "$@"
 
 echo ""
 echo "[SUCCESS] Local packaging complete! Check .release/ for generated archives."
+
