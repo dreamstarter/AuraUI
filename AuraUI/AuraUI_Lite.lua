@@ -16,6 +16,10 @@ AuraUI.Lite = AUILite
 -- that vanilla lacks gates on this, never on WOW_PROJECT_ID (Forever is
 -- classed as mainline on purpose).
 AuraUI.IS_FOREVER = (AUI_CLIENT_FOREVER == true)
+-- Mists of Pandaria Classic (game type "mists"): reporting a 5.x toc (50400-50504).
+AuraUI.IS_MOP = (AUI_CLIENT_MOP == true)
+-- WoW Midnight / modern Retail:
+AuraUI.IS_MIDNIGHT = (not AuraUI.IS_FOREVER and not AuraUI.IS_MOP)
 -- Global cooldown reference spell: Forever reports nothing on 61304 and uses
 -- Classic's 29515.
 AuraUI.GCD_SPELL = AuraUI.IS_FOREVER and 29515 or 61304

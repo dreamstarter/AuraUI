@@ -63,15 +63,19 @@ for toc_path in sorted(all_tocs):
         target_file = os.path.join(addon_dir, file_ref.replace("\\", "/"))
         check(os.path.exists(target_file), f"Manifest entry {file_ref} in {toc_path}")
 
-# 3. Camelot Metadata & Client Gate Check
-print("\n3. Verifying WoW: Forever Camelot Metadata & Client Gate...")
+# 3. Multi-Client Metadata & Client Gate Check (Midnight, Forever, Mists of Pandaria)
+print("\n3. Verifying Multi-Client Metadata & Client Gate (Midnight, Forever, Mists)...")
 gate_file = "AuraUI/AuraUI_ClientGate.lua"
 check(os.path.exists(gate_file), "Client gate file exists (AuraUI_ClientGate.lua)")
 if os.path.exists(gate_file):
     with open(gate_file, "r", encoding="utf-8") as f:
         gate_content = f.read()
     check("AUI_CLIENT_FOREVER = true" in gate_content, "AUI_CLIENT_FOREVER armed in ClientGate")
-    check("16000" in gate_content and "20000" in gate_content, "Interface build range [16000, 20000] handled")
+    check("16000" in gate_content and "20000" in gate_content, "WoW Forever interface build range [16000, 20000] handled")
+    check("AUI_CLIENT_MOP = true" in gate_content, "AUI_CLIENT_MOP armed in ClientGate")
+    check("50000" in gate_content and "60000" in gate_content, "Mists of Pandaria interface build range [50000, 60000] handled")
+    check("120000" in gate_content, "WoW Midnight interface build (>= 120000) handled")
+    check("C_Container" in gate_content, "Defensive C_Container polyfill armed in ClientGate")
 
 camelot_tocs = glob.glob("AuraUI*/*_Camelot.toc")
 check(len(camelot_tocs) >= 19, f"Camelot TOC files count: {len(camelot_tocs)} (>= 19)")
@@ -80,6 +84,14 @@ for c_toc in camelot_tocs:
         c_content = f.read()
     check("AllowLoadGameType: camelot" in c_content, f"camelot game type in {c_toc}")
     check("16001" in c_content, f"16001 interface in {c_toc}")
+
+mists_tocs = glob.glob("AuraUI*/*_Mists.toc")
+check(len(mists_tocs) >= 19, f"Mists of Pandaria TOC files count: {len(mists_tocs)} (>= 19)")
+for m_toc in mists_tocs:
+    with open(m_toc, "r", encoding="utf-8", errors="ignore") as f:
+        m_content = f.read()
+    check("AllowLoadGameType: mists" in m_content, f"mists game type in {m_toc}")
+    check("50504" in m_content, f"50504 interface in {m_toc}")
 
 # 4. AuraUI Unique Innovations Check
 print("\n4. Verifying AuraUI Unique Innovation Modules...")

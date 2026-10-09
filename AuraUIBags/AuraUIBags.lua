@@ -5528,10 +5528,10 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                     iconLbl:SetTextColor(0.7, 0.7, 0.7, 1)
                     iconLbl:SetText(AuraUI.L("Icon:"))
 
-                    -- Forever does not include the newer icon files used by the
-                    -- Midnight picker. Keep its choices to long-standing client
+                    -- Forever and MoP do not include the newer icon files used by the
+                    -- Midnight picker. Keep their choices to long-standing client
                     -- icons, including a profession icon.
-                    local ICON_IDS = AUI_CLIENT_FOREVER and {
+                    local ICON_IDS = (AUI_CLIENT_FOREVER or AUI_CLIENT_MOP) and {
                         134400, 132996, 136240, 136241, 136242, 136244, 136245,
                         136246, 136247, 136248, 136249, 132485, 132640, 134332,
                     } or {

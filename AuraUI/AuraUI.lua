@@ -768,14 +768,22 @@ AuraUI.FOREVER_HIDDEN_ADDONS = {
     -- load on Forever), listed so the profile import/export checklists drop it.
     AuraUIDragonRiding = true,
 }
+AuraUI.MOP_HIDDEN_ADDONS = {
+    AuraUIMythicTimer = true, AuraUIDragonRiding = true, AuraUIForeverEssentials = true,
+}
 -- The mirror: addons that load on WoW Forever alone (TOC
 -- "## AllowLoadGameType: camelot") leave the same lists on every other client.
 AuraUI.FOREVER_ONLY_ADDONS = {
     AuraUIForeverEssentials = true,
 }
 -- The set the running client leaves out.
-AuraUI._CLIENT_HIDDEN_ADDONS = (AUI_CLIENT_FOREVER == true)
-    and AuraUI.FOREVER_HIDDEN_ADDONS or AuraUI.FOREVER_ONLY_ADDONS
+if AUI_CLIENT_FOREVER == true then
+    AuraUI._CLIENT_HIDDEN_ADDONS = AuraUI.FOREVER_HIDDEN_ADDONS
+elseif AUI_CLIENT_MOP == true then
+    AuraUI._CLIENT_HIDDEN_ADDONS = AuraUI.MOP_HIDDEN_ADDONS
+else
+    AuraUI._CLIENT_HIDDEN_ADDONS = AuraUI.FOREVER_ONLY_ADDONS
+end
 -- The profile import/export checklists read the profile data map, which stays
 -- complete (it drives the data itself); they list through this view instead.
 function AuraUI.VisibleProfileAddons(map)
@@ -8988,7 +8996,7 @@ local function CreateMainFrame()
 
     local subTitleFs = MakeFont(logoPlate, 10, nil, 180/255, 140/255, 255/255, 0.9)
     subTitleFs:SetPoint("BOTTOMLEFT", logoIcon, "BOTTOMRIGHT", 10, 4)
-    subTitleFs:SetText((AUI_CLIENT_FOREVER == true) and "FOREVER EDITION" or "INTERFACE SUITE")
+    subTitleFs:SetText((AUI_CLIENT_FOREVER == true) and "FOREVER EDITION" or (AUI_CLIENT_MOP == true and "MISTS EDITION" or "INTERFACE SUITE"))
 
     -- Subtle 1px cyan hairline divider beneath the logo plate
     local logoDivider = logoPlate:CreateTexture(nil, "ARTWORK")

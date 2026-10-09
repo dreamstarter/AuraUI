@@ -22,19 +22,35 @@ if not issecretvalue then
     _G.issecretvalue = function() return false end
 end
 
+-- Defensive polyfills for older clients / MoP / Classic
+if not C_Container then
+    _G.C_Container = {
+        GetContainerNumSlots = _G.GetContainerNumSlots or function() return 0 end,
+        GetContainerItemInfo = _G.GetContainerItemInfo or function() return nil end,
+        GetContainerItemID = _G.GetContainerItemID or function() return nil end,
+        GetContainerItemLink = _G.GetContainerItemLink or function() return nil end,
+        PickupContainerItem = _G.PickupContainerItem or function() end,
+        UseContainerItem = _G.UseContainerItem or function() end,
+    }
+end
+
 local iface = select(4, GetBuildInfo())
 if type(iface) ~= "number" then return end
 
--- WoW Forever (Blizzard game type "camelot"): the 12.1 engine with vanilla
--- content, reporting a 1.60+ toc (16001). Classic Era reports 115xx and
--- retail 12xxxx, so the ranges never meet. Flagged for the suite before any
--- other file runs (AuraUI.IS_FOREVER, AuraUI_Lite.lua); nothing is
--- blocked there.
+-- WoW Forever (Blizzard game type "camelot"): interface 16000 - 19999 (16001).
 if iface >= 16000 and iface < 20000 then
     AUI_CLIENT_FOREVER = true
     return
 end
-if iface >= 120100 then return end
+
+-- Mists of Pandaria Classic (Blizzard game type "mists"): interface builds 50000 - 59999 (50400 - 50504).
+if iface >= 50000 and iface < 60000 then
+    AUI_CLIENT_MOP = true
+    return
+end
+
+-- WoW Midnight (12.0+) and modern Retail: interface 120000+.
+if iface >= 120000 then return end
 
 AUI_CLIENT_BLOCKED = true
 
@@ -77,7 +93,7 @@ ev:SetScript("OnEvent", function(self)
     body:SetPoint("TOP", title, "BOTTOM", 0, -12)
     body:SetWidth(430)
     body:SetJustifyH("CENTER")
-    body:SetText("This version of AuraUI is built for the Midnight 12.1 patch and has been disabled on this game version.|n|nYour saved settings are safe and untouched. Please install the previous AuraUI release until 12.1 launches.")
+    body:SetText("This version of AuraUI is built for Midnight, WoW: Forever, and Mists of Pandaria and has been disabled on this game version.|n|nYour saved settings are safe and untouched. Please install a compatible release for older clients.")
 
     local btn = CreateFrame("Button", nil, p)
     btn:SetSize(110, 26)
