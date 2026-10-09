@@ -1006,6 +1006,33 @@ end
 --  Page builder (dispatched from the Global Settings module registration)
 -------------------------------------------------------------------------------
 
+local pendingStylePicks = {}
+
+local function HasPendingStyleChanges()
+    for mKey, targetVal in pairs(pendingStylePicks) do
+        local m = BY_KEY[mKey]
+        if m and m.get() ~= targetVal then
+            return true
+        end
+    end
+    return false
+end
+
+local function PendingStyleChangeCount()
+    local count = 0
+    for mKey, targetVal in pairs(pendingStylePicks) do
+        local m = BY_KEY[mKey]
+        if m and m.get() ~= targetVal then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+local function ClearPendingStyleChanges()
+    pendingStylePicks = {}
+end
+
 local function StyleRowCfg(m)
     local loaded = NS(m.folder) ~= nil
     return {
@@ -1013,8 +1040,22 @@ local function StyleRowCfg(m)
         values = STYLE_VALUES, order = STYLE_ORDER,
         -- Reload-gated and per-profile: never captured into spec overrides.
         noCapture = true,
-        getValue = function() return m.get() end,
-        setValue = function(v) PromptStyleChange(m, v) end,
+        getValue = function()
+            if pendingStylePicks[m.key] ~= nil then
+                return pendingStylePicks[m.key]
+            end
+            return m.get()
+        end,
+        setValue = function(v)
+            if v == m.get() then
+                pendingStylePicks[m.key] = nil
+            else
+                pendingStylePicks[m.key] = v
+            end
+            if AuraUI.RefreshPage then
+                AuraUI:RefreshPage()
+            end
+        end,
         disabled = function() return not loaded end,
         disabledTooltip = function()
             return AuraUI.Lf("Enable %1$s to change its style.", AuraUI.L(m.enableName or m.display))
@@ -1106,11 +1147,50 @@ function _G._AUI_BuildStylePage(pageName, parent, yOffset)
 
     _, h = W:SectionHeader(parent, SECTION_STYLES, y);  y = y - h
 
+    local pendingCount = PendingStyleChangeCount()
+    local hasPending = pendingCount > 0
+    local applyBtnText = hasPending and ("Apply Styles (" .. pendingCount .. " pending)") or "Apply Styles"
+
+    local applyCfg = {
+        type = "button",
+        text = applyBtnText,
+        buttonText = "Apply",
+        tooltip = "Apply all pending module style changes and reload the UI.",
+        disabled = function() return not HasPendingStyleChanges() end,
+        onClick = function()
+            local changes = {}
+            for mKey, targetVal in pairs(pendingStylePicks) do
+                local m = BY_KEY[mKey]
+                if m and m.get() ~= targetVal then
+                    changes[#changes + 1] = { m = m, key = targetVal }
+                end
+            end
+            if #changes > 0 then
+                ClearPendingStyleChanges()
+                PromptStyleChanges(changes)
+            end
+        end,
+    }
+    local discardCfg = {
+        type = "button",
+        text = "Discard Changes",
+        buttonText = "Discard",
+        tooltip = "Discard all unapplied module style picks.",
+        disabled = function() return not HasPendingStyleChanges() end,
+        onClick = function()
+            ClearPendingStyleChanges()
+            if AuraUI.RefreshPage then
+                AuraUI:RefreshPage()
+            end
+        end,
+    }
+    _, h = W:DualRow(parent, y, applyCfg, discardCfg);  y = y - h
+
     local i = 1
     while i <= #MODULES do
         local left = StyleRowCfg(MODULES[i])
         local rightM = MODULES[i + 1]
-        local right = rightM and StyleRowCfg(rightM) or { type = "label", text = "" }
+        local right = rightM and StyleRowCfg(rightM) or AuraUI.BlankRowCfg()
         _, h = W:DualRow(parent, y, left, right);  y = y - h
         i = i + 2
     end

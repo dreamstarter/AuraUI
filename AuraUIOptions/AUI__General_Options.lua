@@ -2901,32 +2901,8 @@ initFrame:SetScript("OnEvent", function(self)
                       if AuraUIDB then AuraUIDB.displayLocale = v end
                       LanguageReload()
                   end },
-                { type="toggle", text="Enable Tutorial Tips",
-                  tooltip="Show one-time video guide badges next to new or complex features. Each badge disappears forever once clicked.",
-                  getValue=function()
-                      return not (AuraUIDB and AuraUIDB.tutorialTipsDisabled)
-                  end,
-                  setValue=function(v)
-                      if not AuraUIDB then AuraUIDB = {} end
-                      AuraUIDB.tutorialTipsDisabled = (not v) and true or nil
-                      if AuraUI.VideoGuides and AuraUI.VideoGuides.RefreshTips then
-                          AuraUI.VideoGuides.RefreshTips()
-                      end
-                  end });  y = y - h
+                AuraUI.BlankRowCfg());  y = y - h
         end
-
-        _, h = W:DualRow(parent, y,
-            { type="toggle", text="Auto Expand Less Common Settings",
-              tooltip="Always show less common settings instead of collapsing them behind a Show Less Common link.",
-              getValue=function() return (AuraUIDB and AuraUIDB.autoExpandLessCommon) == true end,
-              setValue=function(v)
-                  if not AuraUIDB then AuraUIDB = {} end
-                  AuraUIDB.autoExpandLessCommon = v and true or nil
-                  -- Cached pages hold the old expand state; drop them all so they rebuild on next visit, then rebuild this page in place.
-                  AuraUI:InvalidatePageCache()
-                  AuraUI:RefreshPage(true)
-              end },
-            { type="label", text="" });  y = y - h
 
         _, h = W:Spacer(parent, y, 20);  y = y - h
 
@@ -3266,6 +3242,96 @@ initFrame:SetScript("OnEvent", function(self)
                 })
             end)
             y = y - BTN_H
+
+            y = y - 12  -- spacer between action buttons
+            local ubtn = CreateFrame("Button", nil, parent)
+            ubtn:SetSize(BTN_W, BTN_H)
+            ubtn:SetPoint("TOP", parent, "TOP", 0, y)
+            ubtn:SetFrameLevel(parent:GetFrameLevel() + 5)
+            ubtn:SetAlpha(0.85)
+            local ubrd = AuraUI.MakeBorder(ubtn, 0.8, 0.2, 0.2, 0.5, AuraUI.PanelPP)
+            local ubg = AuraUI.SolidTex(ubtn, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.92)
+            ubg:SetAllPoints()
+            local ulbl = AuraUI.MakeFont(ubtn, 13, nil, 0.9, 0.3, 0.3)
+            ulbl:SetAlpha(0.7)
+            ulbl:SetPoint("CENTER")
+            ulbl:SetText(AuraUI.L("Uninstall EUI"))
+            do
+                local FADE_DUR = 0.1
+                local progress, target = 0, 0
+                local function Apply(t)
+                    ulbl:SetTextColor(lerp(0.9, 1, t), lerp(0.3, 0.35, t), lerp(0.3, 0.35, t), lerp(0.7, 1, t))
+                    ubrd:SetColor(0.8, 0.2, 0.2, lerp(0.5, 0.8, t))
+                end
+                local function OnUpdate(self, elapsed)
+                    local dir = (target == 1) and 1 or -1
+                    progress = progress + dir * (elapsed / FADE_DUR)
+                    if (dir == 1 and progress >= 1) or (dir == -1 and progress <= 0) then
+                        progress = target; self:SetScript("OnUpdate", nil)
+                    end
+                    Apply(progress)
+                end
+                ubtn:SetScript("OnEnter", function(self) target = 1; self:SetScript("OnUpdate", OnUpdate) end)
+                ubtn:SetScript("OnLeave", function(self) target = 0; self:SetScript("OnUpdate", OnUpdate) end)
+            end
+            ubtn:SetScript("OnClick", function()
+                AuraUI:ShowConfirmPopup({
+                    title       = "Uninstall EUI",
+                    message     = "Are you sure you want to uninstall AuraUI? This will restore Blizzard CVars to default, disable all AuraUI addons, and reload your UI.",
+                    disclaimer  = "SavedVariables data will remain on disk in case you wish to reinstall later.",
+                    confirmText = "Uninstall & Reload",
+                    cancelText  = "Cancel",
+                    reload      = true,
+                    onConfirm   = function()
+                        local cvarsToRestore = {
+                            "cameraDistanceMaxZoomFactor",
+                            "ActionButtonUseKeyDown",
+                            "ResampleAlwaysSharpen",
+                            "SpellQueueWindow",
+                            "WorldTextScale_v2",
+                            "floatingCombatTextCombatDamage_v2",
+                            "floatingCombatTextCombatHealing_v2",
+                            "floatingCombatTextCombatLogPeriodicSpells_v2",
+                            "floatingCombatTextPetMeleeDamage_v2",
+                            "floatingCombatTextPetSpellDamage_v2",
+                            "scriptErrors",
+                        }
+                        for _, cvar in ipairs(cvarsToRestore) do
+                            local def = C_CVar and C_CVar.GetCVarDefault and C_CVar.GetCVarDefault(cvar)
+                            if def then
+                                SetCVarSafe(cvar, def)
+                            end
+                        end
+                        local addons = {
+                            "AuraUI",
+                            "AuraUIActionBars",
+                            "AuraUIAuraBuffReminders",
+                            "AuraUIBlizzardSkin",
+                            "AuraUIChat",
+                            "AuraUICooldownManager",
+                            "AuraUIDamageMeters",
+                            "AuraUIForeverEssentials",
+                            "AuraUIMinimap",
+                            "AuraUIMythicTimer",
+                            "AuraUINameplates",
+                            "AuraUIOptions",
+                            "AuraUIPlayerAuraBars",
+                            "AuraUIQoL",
+                            "AuraUIRaidFrames",
+                            "AuraUIResourceBars",
+                            "AuraUIUnitFrames",
+                            "AuraUIVideoGuides",
+                        }
+                        local DisableFn = (C_AddOns and C_AddOns.DisableAddOn) or DisableAddOn
+                        if DisableFn then
+                            for _, a in ipairs(addons) do
+                                pcall(DisableFn, a)
+                            end
+                        end
+                    end,
+                })
+            end)
+            y = y - BTN_H
         end
 
         return math.abs(y)
@@ -3329,7 +3395,7 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Helper to save a color entry
         local function SaveColorEntry(category, key, data)
-            local db = GetCustomColorsDB()
+            local db = GetCustomColorsDB(category)
             if not db[category] then db[category] = {} end
             db[category][key] = data
             AuraUI.ApplyColorsToOUF()
@@ -3565,37 +3631,47 @@ initFrame:SetScript("OnEvent", function(self)
 
         _, h = W:Spacer(parent, y, 20);  y = y - h
 
-        -------------------------------------------------------------------
-        --  GLOBAL COLORS section
-        -------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, "GLOBAL COLORS", y);  y = y - h
-        do
+        local function BuildColorProfileSourceRow(par, yPos, catKey)
             local profileOrder = select(1, AuraUI.GetProfileList()) or {}
             local pullValues = {}
             for _, n in ipairs(profileOrder) do pullValues[n] = n end
-            _, h = W:DualRow(parent, y,
+            local applyKey = "colorsApplyToAll_" .. catKey
+            local pullKey = "colorsPullFrom_" .. catKey
+            local _, rowH = W:DualRow(par, yPos,
                 { type="toggle", text="Apply to All Profiles",
-                  tooltip="On (default): one profile's palette is shared across every profile (chosen via Pull Colors From). Off: each profile keeps its own custom colors (Power, Class Resource, Class, Resource).",
-                  -- Default ON (nil treated as on) = global colours for all profiles.
-                  getValue=function() return AuraUIDB.colorsApplyToAllProfiles ~= false end,
+                  tooltip="On (default): one profile's palette is shared across every profile (chosen via Pull Colors From). Off: this profile keeps its own custom colors.",
+                  getValue=function()
+                      if AuraUIDB and AuraUIDB[applyKey] ~= nil then return AuraUIDB[applyKey] ~= false end
+                      return (AuraUIDB and AuraUIDB.colorsApplyToAllProfiles) ~= false
+                  end,
                   setValue=function(v)
-                      AuraUIDB.colorsApplyToAllProfiles = v
+                      if not AuraUIDB then AuraUIDB = {} end
+                      AuraUIDB[applyKey] = v
                       AuraUI.ApplyColorsToOUF()
-                      -- Force rebuild: toggle flips the dropdown's enabled state and the editing-gate, which a fast-path refresh won't redo.
                       AuraUI:RefreshPage(true)
                   end },
-                -- Global-mode source: which single profile's palette all profiles use. Enabled only while "Apply to All Profiles" is ON.
                 { type="dropdown", text="Pull Colors From",
                   values=pullValues, order=profileOrder,
-                  disabled=function() return AuraUIDB.colorsApplyToAllProfiles == false end,
+                  disabled=function()
+                      if not AuraUIDB then return false end
+                      local on = AuraUIDB[applyKey]
+                      if on ~= nil then return on == false end
+                      return AuraUIDB.colorsApplyToAllProfiles == false
+                  end,
                   disabledTooltip="Apply to All Profiles",
-                  getValue=function() return AuraUIDB.colorsPullFrom or profileOrder[1] end,
+                  getValue=function()
+                      if not AuraUIDB then return profileOrder[1] end
+                      return AuraUIDB[pullKey] or AuraUIDB.colorsPullFrom or profileOrder[1]
+                  end,
                   setValue=function(v)
-                      AuraUIDB.colorsPullFrom = v
+                      if not AuraUIDB then AuraUIDB = {} end
+                      AuraUIDB[pullKey] = v
                       AuraUI.ApplyColorsToOUF()
                       AuraUI:RefreshPage()
-                  end });  y = y - h
+                  end })
+            return rowH
         end
+
         -- Colour-edit gate: when this profile mirrors another's colours (GLOBAL mode on a different profile), each section grid gets its OWN
         -- click-blocking overlay (built at the end of this builder). Grid bounds {top, bot} are captured into _colorGates as sections lay out.
         local _colorGates = {}
@@ -3605,7 +3681,8 @@ initFrame:SetScript("OnEvent", function(self)
         --  CLASS COLORS section
         -------------------------------------------------------------------
         _, h = W:SectionHeader(parent, "CLASS COLORS", y);  y = y - h
-        _colorGates[1] = { top = y }
+        h = BuildColorProfileSourceRow(parent, y, "class");  y = y - h
+        _colorGates[1] = { top = y, cat = "class" }
 
         local classItems = {}
         for _, token in ipairs(CLASS_ORDER) do
@@ -3616,15 +3693,15 @@ initFrame:SetScript("OnEvent", function(self)
                 label = AuraUI.L(lbl),
                 classToken = token,
                 getColor = function()
-                    local db = GetCustomColorsDB()
+                    local db = GetCustomColorsDB("class")
                     if db.class and db.class[token] then return db.class[token] end
-                    return { r = def.r, g = def.g, b = def.b }
+                    return { r = def.r, g = def.b, b = def.b }
                 end,
                 setColor = function(c)
                     SaveColorEntry("class", token, c)
                 end,
                 resetFn = function()
-                    local db = GetCustomColorsDB()
+                    local db = GetCustomColorsDB("class")
                     if db.class then db.class[token] = nil end
                 end,
             }
@@ -3640,7 +3717,8 @@ initFrame:SetScript("OnEvent", function(self)
         --  POWER COLORS section
         -------------------------------------------------------------------
         _, h = W:SectionHeader(parent, "POWER COLORS", y);  y = y - h
-        _colorGates[2] = { top = y }
+        h = BuildColorProfileSourceRow(parent, y, "power");  y = y - h
+        _colorGates[2] = { top = y, cat = "power" }
 
         local POWER_ORDER = {
             "MANA", "RAGE", "FOCUS", "ENERGY", "RUNIC_POWER", "FURY",
@@ -3655,7 +3733,7 @@ initFrame:SetScript("OnEvent", function(self)
                 label = AuraUI.L(lbl),
                 classToken = nil,
                 getColor = function()
-                    local db = GetCustomColorsDB()
+                    local db = GetCustomColorsDB("power")
                     if db.power and db.power[pk] then return db.power[pk] end
                     return { r = def.r, g = def.g, b = def.b }
                 end,
@@ -3663,6 +3741,8 @@ initFrame:SetScript("OnEvent", function(self)
                     SaveColorEntry("power", pk, c)
                 end,
                 resetFn = function()
+                    local db = GetCustomColorsDB("power")
+                    if db.power then db.power[pk] = nil end
                     AuraUI.ResetPowerColor(pk)
                 end,
             }
@@ -3679,7 +3759,8 @@ initFrame:SetScript("OnEvent", function(self)
         --  POWER COLORS pattern, saved under the "classResource" custom-colors category (not yet consumed).
         -------------------------------------------------------------------
         _, h = W:SectionHeader(parent, "CLASS RESOURCE COLORS", y);  y = y - h
-        _colorGates[3] = { top = y }
+        h = BuildColorProfileSourceRow(parent, y, "classResource");  y = y - h
+        _colorGates[3] = { top = y, cat = "classResource" }
         do
             -- Order + labels only; defaults live in the shared DEFAULT_CLASS_RESOURCE_COLORS, the source the resource bar's "Class Resource
             -- Color" fill mode reads.
@@ -3711,7 +3792,7 @@ initFrame:SetScript("OnEvent", function(self)
                         SaveColorEntry("classResource", key, c)
                     end,
                     resetFn = function()
-                        local cdb = GetCustomColorsDB()
+                        local cdb = GetCustomColorsDB("classResource")
                         if cdb.classResource then cdb.classResource[key] = nil end
                     end,
                 }
@@ -3729,9 +3810,10 @@ initFrame:SetScript("OnEvent", function(self)
         do
             local gates = {}
             local CPAD = AuraUI.CONTENT_PAD or 20  -- side inset so the overlay matches the grid content width
-            local function MakeColorGate(topY, botY)
+            local function MakeColorGate(topY, botY, cat)
                 if not topY or not botY then return end
                 local ov = CreateFrame("Frame", nil, parent)
+                ov._cat = cat
                 ov:SetPoint("TOPLEFT", parent, "TOPLEFT", CPAD, topY)
                 ov:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -CPAD, topY)
                 ov:SetHeight(math.abs(botY - topY))
@@ -3749,17 +3831,16 @@ initFrame:SetScript("OnEvent", function(self)
                 ov._msg = msg
                 gates[#gates + 1] = ov
             end
-            for _, g in ipairs(_colorGates) do MakeColorGate(g.top, g.bot) end
+            for _, g in ipairs(_colorGates) do MakeColorGate(g.top, g.bot, g.cat) end
             local function UpdateColorGate()
-                local locked = AuraUI.IsColorEditingLocked()
-                local text
-                if locked then
-                    local p = AuraUI.GetProfilesDB()
-                    local srcName = AuraUIDB.colorsPullFrom or (p.profileOrder and p.profileOrder[1]) or ""
-                    text = AuraUI.Lf("Colors are shared globally from the \"%1$s\" profile.\nSwitch to it (or set Pull Colors From to this profile) to edit.", srcName)
-                end
+                local p = AuraUI.GetProfilesDB and AuraUI.GetProfilesDB()
                 for _, ov in ipairs(gates) do
+                    local cat = ov._cat
+                    local locked = AuraUI.IsColorEditingLocked(cat)
                     if locked then
+                        local pullKey = cat and ("colorsPullFrom_" .. cat)
+                        local srcName = (pullKey and AuraUIDB and AuraUIDB[pullKey]) or (AuraUIDB and AuraUIDB.colorsPullFrom) or (p and p.profileOrder and p.profileOrder[1]) or ""
+                        local text = AuraUI.Lf("Colors are shared globally from the \"%1$s\" profile.\nSwitch to it (or set Pull Colors From to this profile) to edit.", srcName)
                         ov._msg:SetText(text)
                         ov:Show()
                     else

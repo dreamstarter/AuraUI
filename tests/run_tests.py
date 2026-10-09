@@ -322,8 +322,32 @@ check('a.type == "dynamicrez"' in cc_content and 'b.type == "dynamicrez"' in cc_
 check('(friendly.type == "dynamicrez")' in cc_content, "dynamicrez merged with harmful spell in CC_MergeComplementarySpellBindings")
 check('singleName then' in cc_content and 'elseif groupName then' in cc_content, "BuildRezLines prioritizes singleName over groupName")
 check('IsSpellKnownOrOverridesKnown' in cc_content and 'GetSpellInfo' in cc_content, "BuildRezLines uses multi-client safe spell and talent checks")
+print("\n13. Verifying Group E Upstream Sync Features...")
+with open("AuraUIOptions/AUI_Style_Options.lua", "r", encoding="utf-8") as f:
+    style_content = f.read()
+check("pendingStylePicks" in style_content and "HasPendingStyleChanges" in style_content, "Style picks pending change batching active")
+check("Apply Styles" in style_content and "Discard Changes" in style_content, "Style picks Apply and Discard UI controls active")
 
-print("\n13. Verifying Codebase Source Integrity & Clean Syntax...")
+with open("AuraUI/AuraUI.lua", "r", encoding="utf-8") as f:
+    core_content = f.read()
+check("AuraUI:SetPanelScale" in core_content and "_RefreshWindowScaleSlider" in core_content, "Window scale slider and refresh logic active")
+check("popup._isReload" in core_content and "popup:SetScript(\"OnKeyDown\"" in core_content, "Enter key reload handler active on reload popup")
+
+with open("AuraUIOptions/AUI__General_Options.lua", "r", encoding="utf-8") as f:
+    gen_content = f.read()
+check("Uninstall EUI" in gen_content and "C_CVar.GetCVarDefault" in gen_content, "Uninstall EUI setting and CVar restoration active")
+check("colorsApplyToAll_" in gen_content and "colorsPullFrom_" in gen_content, "Per-section independent color source settings active")
+
+with open("AuraUIChat/AuraUIChat.lua", "r", encoding="utf-8") as f:
+    chat_content = f.read()
+check("MessageBelongsToVisibleChat" in chat_content and "_idleMouseOver" in chat_content, "Chat idle fade tab filter and mouse hover protection active")
+check("ScrollToEnd" in chat_content and "SetScrollPercentage(1)" in chat_content, "Copy Chat window scroll to bottom active")
+
+with open("AuraUI/AUI_UnlockMode.lua", "r", encoding="utf-8") as f:
+    unlock_content = f.read()
+check("mCX - uW * 0.5" in unlock_content and "snap.relTo" in unlock_content, "Unlock Mode mover center positioning and snapshot restoration active")
+
+print("\n14. Verifying Codebase Source Integrity & Clean Syntax...")
 bad_markers = ["[truncated", "truncated for diff", "<<<<<<<", ">>>>>>>"]
 corrupted_files = []
 lua_file_count = 0

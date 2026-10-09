@@ -258,6 +258,8 @@ local QUERY_SYNONYMS = {
     { "absorb",          { "shield" } },
     { "stacks",          { "charges" } },
     { "charges",         { "stacks" } },
+    { "range",           { "distance" } },
+    { "distance",        { "range" } },
     { "plates",          { "nameplate" } },
     { "hotbar",          { "action bar" } },
     { "buffs",           { "aura" } },

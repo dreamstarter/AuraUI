@@ -3772,9 +3772,19 @@ local function ShowCopyPopup(text)
     local popup = copyDimmer._popup
     popup._textBox:SetText(text)
     popup._editBox._readOnlyText = text
+    local scrollBox = popup._textBox:GetScrollBox()
+    if scrollBox then
+        if scrollBox.ScrollToEnd then scrollBox:ScrollToEnd()
+        elseif scrollBox.SetScrollPercentage then scrollBox:SetScrollPercentage(1) end
+    end
     ECHAT.HostPopup(copyDimmer)
     copyDimmer:Show()
     C_Timer.After(0.05, function()
+        local sb = popup._textBox:GetScrollBox()
+        if sb then
+            if sb.ScrollToEnd then sb:ScrollToEnd()
+            elseif sb.SetScrollPercentage then sb:SetScrollPercentage(1) end
+        end
         popup._editBox:SetFocus()
         popup._editBox:HighlightText()
     end)
@@ -5539,6 +5549,10 @@ initFrame:SetScript("OnEvent", function(self)
         local function StartIdleFade()
             if ECHAT.DB().idleFadeEnabled == false then return end
             if _idleFadeActive then return end
+            if _idleMouseOver or (ns._chatHoverOverlay and ns._chatHoverOverlay:IsMouseOver()) then
+                ECHAT.ResetIdleTimer()
+                return
+            end
             _idleFadeActive = true
             ECHAT.SetIdleFadeAlpha(GetIdleFadeAlpha())
             -- Faded: arm the hover-reveal motion overlay.
@@ -5591,12 +5605,68 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end
 
+        local function FrameShowsMsgEvent(cf, event, arg9)
+            if not cf or not event then return false end
+            local chatType = event:sub(10)
+            if chatType:sub(-7) == "_INFORM" then
+                chatType = chatType:sub(1, -8)
+            end
+            if chatType == "CHANNEL" then
+                local chList = cf.channelList
+                if type(chList) == "table" and arg9 then
+                    for i = 1, #chList do
+                        if chList[i] == arg9 or chList[i] == tostring(arg9) then
+                            return true
+                        end
+                    end
+                end
+                return false
+            end
+            local list = cf.messageTypeList
+            if type(list) ~= "table" then return true end
+            for i = 1, #list do
+                if list[i] == chatType then
+                    return true
+                end
+            end
+            return false
+        end
+
+        local function MessageBelongsToVisibleChat(event, ...)
+            if not event then return true end
+            local arg9 = select(9, ...)
+            local sel = _G.SELECTED_CHAT_FRAME or _G.DEFAULT_CHAT_FRAME
+            if sel and FrameShowsMsgEvent(sel, event, arg9) then
+                return true
+            end
+            for i = 1, 10 do
+                local cf = _G["ChatFrame" .. i]
+                if cf and not cf.isDocked and cf:IsShown() and FrameShowsMsgEvent(cf, event, arg9) then
+                    return true
+                end
+            end
+            local frames = _G.CHAT_FRAMES
+            if frames then
+                for i = 1, #frames do
+                    local cf = _G[frames[i]]
+                    if cf and cf.isTemporary and not cf.isDocked and cf:IsShown() and FrameShowsMsgEvent(cf, event, arg9) then
+                        return true
+                    end
+                end
+            end
+            return false
+        end
+
         -- Idle reset via standalone event frame (no hooks on chat frames).
         local idleEventFrame = CreateFrame("Frame")
         for ev in pairs(CHAT_MSG_EVENTS) do
             idleEventFrame:RegisterEvent(ev)
         end
-        idleEventFrame:SetScript("OnEvent", OnActiveMessage)
+        idleEventFrame:SetScript("OnEvent", function(self, event, ...)
+            if MessageBelongsToVisibleChat(event, ...) then
+                OnActiveMessage()
+            end
+        end)
 
         -- Permanent docked frames only (1-10): hooking a temp whisper edit box
         -- (11+) taints its execution context and poisons HistoryKeeper on
@@ -5647,8 +5717,10 @@ initFrame:SetScript("OnEvent", function(self)
             local whisperFrame = CreateFrame("Frame")
             whisperFrame:RegisterEvent("CHAT_MSG_WHISPER")
             whisperFrame:RegisterEvent("CHAT_MSG_BN_WHISPER")
-            whisperFrame:SetScript("OnEvent", function()
-                OnActiveMessage()
+            whisperFrame:SetScript("OnEvent", function(self, event, ...)
+                if MessageBelongsToVisibleChat(event, ...) then
+                    OnActiveMessage()
+                end
                 local cfg = ECHAT.DB()
                 local key = cfg and cfg.whisperSoundKey
                 if not key or key == "none" then return end

@@ -1560,9 +1560,7 @@ do
             local bg = _syncPopup:CreateTexture(nil, "BACKGROUND")
             bg:SetAllPoints(); bg:SetColorTexture(15/255, 17/255, 22/255, 1)
             _syncPopup._bg = bg
-            -- Controller cursor: born hidden, so the Show below runs its OnShow
-            -- (the click-away) on the first open too.
-            if AuraUI.PadInUse() then _syncPopup:Hide() end
+            _syncPopup:Hide()
             AuraUI.TrackOverlay(_syncPopup)
             AuraUI.PadHint(_syncPopup, "nodepass")
         end
@@ -4704,26 +4702,28 @@ end
 --   OFF (per-profile): the ACTIVE profile's own palette.
 -- Nothing is wiped/restored on a profile switch (the getter just resolves a different
 -- table), so a spec-switch colour wipe cannot happen. Missing tables -> defaults.
-function AuraUI.GetCustomColorsDB()
+function AuraUI.GetCustomColorsDB(sectionKey)
     if not AuraUIDB then AuraUIDB = {} end
     if not AuraUIDB.customColors then AuraUIDB.customColors = {} end
     if AuraUI.GetProfilesDB then
         local pdb = AuraUI.GetProfilesDB()
-        if AuraUIDB.colorsApplyToAllProfiles == false then
+        local applyKey = sectionKey and ("colorsApplyToAll_" .. sectionKey) or "colorsApplyToAllProfiles"
+        local pullKey = sectionKey and ("colorsPullFrom_" .. sectionKey) or "colorsPullFrom"
+        local apply = AuraUIDB[applyKey]
+        if apply == nil then apply = AuraUIDB.colorsApplyToAllProfiles ~= false else apply = apply ~= false end
+
+        if not apply then
             -- Per-profile: the active profile's own palette.
             local active = pdb.profiles and pdb.profiles[pdb.activeProfile or "Default"]
             if active then active.customColors = active.customColors or {}; return active.customColors end
         else
             -- Global (default): the chosen source profile's palette, used everywhere.
-            -- Heal a dangling source pointer first (profile removed by a path that
-            -- missed the DeleteProfile/RenameProfile cleanup, or a DB saved before
-            -- that cleanup existed): treat it as unset so the first profile takes
-            -- over, instead of silently falling through to the legacy account table.
-            local pull = AuraUIDB.colorsPullFrom
+            -- Heal a dangling source pointer first.
+            local pull = AuraUIDB[pullKey]
             if pull and not (pdb.profiles and pdb.profiles[pull]) then
-                AuraUIDB.colorsPullFrom = nil
+                AuraUIDB[pullKey] = nil
             end
-            local srcName = AuraUIDB.colorsPullFrom or (pdb.profileOrder and pdb.profileOrder[1])
+            local srcName = AuraUIDB[pullKey] or AuraUIDB.colorsPullFrom or (pdb.profileOrder and pdb.profileOrder[1])
             local src = srcName and pdb.profiles and pdb.profiles[srcName]
             if src then src.customColors = src.customColors or {}; return src.customColors end
         end
@@ -4734,13 +4734,17 @@ end
 -- Colour editing locks ONLY in global mode while viewing a profile other than the
 -- palette source (editing a dormant palette would mislead). Per-profile mode is always
 -- editable; global mode is editable on the source profile.
-function AuraUI.IsColorEditingLocked()
+function AuraUI.IsColorEditingLocked(sectionKey)
     if not AuraUIDB then return false end
-    if AuraUIDB.colorsApplyToAllProfiles == false then return false end
+    local applyKey = sectionKey and ("colorsApplyToAll_" .. sectionKey) or "colorsApplyToAllProfiles"
+    local pullKey = sectionKey and ("colorsPullFrom_" .. sectionKey) or "colorsPullFrom"
+    local apply = AuraUIDB[applyKey]
+    if apply == nil then apply = AuraUIDB.colorsApplyToAllProfiles ~= false else apply = apply ~= false end
+    if not apply then return false end
     if not AuraUI.GetProfilesDB then return false end
     local pdb = AuraUI.GetProfilesDB()
     local activeName = pdb.activeProfile or "Default"
-    local srcName = AuraUIDB.colorsPullFrom or (pdb.profileOrder and pdb.profileOrder[1])
+    local srcName = AuraUIDB[pullKey] or AuraUIDB.colorsPullFrom or (pdb.profileOrder and pdb.profileOrder[1])
     return srcName ~= nil and srcName ~= activeName
 end
 
@@ -4847,13 +4851,15 @@ function AuraUI._BuildColorPalette(out, defaults, custom, darkenPct)
 end
 
 function AuraUI._RebuildColorCache()
-    local cc = AuraUI.GetCustomColorsDB()
+    local ccClass = AuraUI.GetCustomColorsDB("class")
+    local ccPower = AuraUI.GetCustomColorsDB("power")
+    local ccRes   = AuraUI.GetCustomColorsDB("classResource")
     local dm = AuraUI.GetDarkModeDB()
     local cache = AuraUI._colorCache
-    AuraUI._BuildColorPalette(cache.class,          AuraUI.CLASS_COLOR_MAP,               cc and cc.class,          dm and dm.classDarken)
-    AuraUI._BuildColorPalette(cache.power,          AuraUI.DEFAULT_POWER_COLORS,          cc and cc.power,          dm and dm.powerDarken)
-    AuraUI._BuildColorPalette(cache.classResource,  AuraUI.DEFAULT_CLASS_RESOURCE_COLORS, cc and cc.classResource,  dm and dm.resourceDarken)
-    AuraUI._BuildColorPalette(cache.resource,       AuraUI.DEFAULT_RESOURCE_COLORS,       cc and cc.resource,       dm and dm.resourceDarken)
+    AuraUI._BuildColorPalette(cache.class,          AuraUI.CLASS_COLOR_MAP,               ccClass and ccClass.class,          dm and dm.classDarken)
+    AuraUI._BuildColorPalette(cache.power,          AuraUI.DEFAULT_POWER_COLORS,          ccPower and ccPower.power,          dm and dm.powerDarken)
+    AuraUI._BuildColorPalette(cache.classResource,  AuraUI.DEFAULT_CLASS_RESOURCE_COLORS, ccRes and ccRes.classResource,    dm and dm.resourceDarken)
+    AuraUI._BuildColorPalette(cache.resource,       AuraUI.DEFAULT_RESOURCE_COLORS,       ccRes and ccRes.resource,         dm and dm.resourceDarken)
     -- BG Power Color Darken: extra blacken for power-COLORED bar backgrounds, kept as a multiplier (not a palette) so it stacks on whatever power color a consumer resolved.
     local bgd = (dm and dm.powerBgDarken) or 0
     AuraUI._powerBgDarkenFactor = bgd > 0 and math.max(0, 1 - bgd / 100) or 1
@@ -7287,13 +7293,23 @@ local function WirePopupEscape(popup, dimmer)
             self:SetPropagateKeyboardInput(false)
             dimmer:Hide()
             if popup._onCancel then popup._onCancel() end
+        elseif (key == "ENTER" or key == "NUMPADENTER") and popup._isReload and not popup._typeGateOn then
+            self:SetPropagateKeyboardInput(false)
+            if popup._macroOverlay and popup._macroOverlay:IsShown() then
+                popup._macroOverlay:Click()
+            elseif popup._confirmBtn and popup._confirmBtn:IsShown() and popup._confirmBtn:IsEnabled() then
+                popup._confirmBtn:Click()
+            end
         else
             self:SetPropagateKeyboardInput(true)
         end
     end)
-    -- Release keyboard capture when the popup is dismissed
+    -- Release keyboard capture and override bindings when the popup is dismissed
     dimmer:HookScript("OnHide", function()
         popup:EnableKeyboard(false)
+        if ClearOverrideBindings and not InCombatLockdown() then
+            ClearOverrideBindings(popup)
+        end
     end)
     dimmer:HookScript("OnShow", function()
         popup:EnableKeyboard(true)
@@ -7422,6 +7438,7 @@ local function CreateConfirmPopup()
 
     popup._cancelBtn  = cancelBtn
     popup._confirmBtn = confirmBtn
+    _G["EUIConfirmPopupConfirmBtn"] = confirmBtn
 
     -- Optional checkbox (above buttons, centered)
     local cbRow = CreateFrame("Button", nil, popup)
@@ -7539,6 +7556,7 @@ function AuraUI:ShowConfirmPopup(opts)
     -- caller's work running as its post-click action); in combat, where the
     -- overlay's attributes cannot be written, the work is applied and the
     -- popup asks for a manual /reload. The caller's table is left as is.
+    local isReload = (opts.reload == true) or (opts.confirmMacro == "/reload")
     if opts.reload then
         local o = {}
         for k, v in pairs(opts) do o[k] = v end
@@ -7565,6 +7583,7 @@ function AuraUI:ShowConfirmPopup(opts)
     -- Force-close any widget tooltip so it doesn't linger behind the popup
     if AuraUI.HideWidgetTooltip then AuraUI.HideWidgetTooltip() end
     local popup = CreateConfirmPopup()
+    popup._isReload = isReload
 
     -- Background style: flat (default) or modern Blizzard stone
     local modern = opts.modernBlizz
@@ -7795,9 +7814,14 @@ function AuraUI:ShowConfirmPopup(opts)
     if mf and mf:GetScale() ~= 1 then
         popup:SetScale(mf:GetScale())
     else
-        popup:SetScale(1)
+        popup:SetScale(AuraUI.GetPopupScale and AuraUI.GetPopupScale() or 1)
     end
 
+    if isReload and not InCombatLockdown() and SetOverrideBindingClick then
+        local targetBtn = opts.confirmMacro and "EUIConfirmMacroOverlay" or "EUIConfirmPopupConfirmBtn"
+        SetOverrideBindingClick(popup, true, "ENTER", targetBtn)
+        SetOverrideBindingClick(popup, true, "NUMPADENTER", targetBtn)
+    end
 
     popup._dimmer:Show()
     -- Controller cursor: move it into the popup (the safe button is its first stop).
@@ -8767,6 +8791,114 @@ local function CreateMainFrame()
         collapseBtn:SetFrameLevel(clickArea:GetFrameLevel() + 20)
         collapseBtn:SetScript("OnClick", function() AuraUI._SetPanelCollapsed(true) end)
         tbox.Hover(collapseBtn, bgFrame, 0, 0, tbox.DX, AuraUI.L("Collapse"))
+    end
+
+    -----------------------------------------------------------------------
+    --  Window Scale slider (top corner slider, 5% steps, Shift+wheel)
+    -----------------------------------------------------------------------
+    do
+        local scaleFrame = CreateFrame("Frame", nil, clickArea)
+        scaleFrame:SetSize(130, 24)
+        scaleFrame:SetPoint("TOPRIGHT", clickArea, "TOPRIGHT", -(tbox.DX + 14 + 48), -19)
+        scaleFrame:SetFrameLevel(clickArea:GetFrameLevel() + 20)
+        scaleFrame:EnableMouse(true)
+        scaleFrame:EnableMouseWheel(true)
+
+        local label = MakeFont(scaleFrame, 11, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.8)
+        label:SetPoint("LEFT", scaleFrame, "LEFT", 0, 0)
+        label:SetText(AuraUI.L("Scale:"))
+
+        local valText = MakeFont(scaleFrame, 11, nil, 1, 1, 1, 0.9)
+        valText:SetPoint("RIGHT", scaleFrame, "RIGHT", 0, 0)
+
+        local track = CreateFrame("Button", nil, scaleFrame)
+        track:SetPoint("LEFT", label, "RIGHT", 6, 0)
+        track:SetPoint("RIGHT", valText, "LEFT", -6, 0)
+        track:SetHeight(4)
+        track:EnableMouse(true)
+        track:EnableMouseWheel(true)
+
+        local trackBg = track:CreateTexture(nil, "BACKGROUND")
+        trackBg:SetAllPoints()
+        trackBg:SetColorTexture(1, 1, 1, 0.15)
+
+        local thumb = track:CreateTexture(nil, "OVERLAY")
+        thumb:SetSize(8, 12)
+        thumb:SetColorTexture(ELLESMERE_GREEN.r, ELLESMERE_GREEN.g, ELLESMERE_GREEN.b, 0.9)
+        AuraUI.RegAccent({ type = "solid", obj = thumb, a = 0.9 })
+
+        local MIN_SCALE, MAX_SCALE, STEP = 0.50, 2.00, 0.05
+        local isDragging = false
+
+        local function UpdateVisuals(scale)
+            local s = math.floor(scale / STEP + 0.5) * STEP
+            valText:SetText(math.floor(s * 100 + 0.5) .. "%")
+            local pct = (s - MIN_SCALE) / (MAX_SCALE - MIN_SCALE)
+            if pct < 0 then pct = 0 elseif pct > 1 then pct = 1 end
+            local tw = track:GetWidth() or 50
+            thumb:ClearAllPoints()
+            thumb:SetPoint("CENTER", track, "LEFT", pct * tw, 0)
+        end
+
+        local function ApplyUserScale(newScale)
+            local s = math.floor(newScale / STEP + 0.5) * STEP
+            if s < MIN_SCALE then s = MIN_SCALE elseif s > MAX_SCALE then s = MAX_SCALE end
+            AuraUI:SetPanelScale(s)
+            UpdateVisuals(s)
+        end
+
+        local function SetFromCursor()
+            local curX = GetCursorPosition()
+            local eff = track:GetEffectiveScale()
+            local left = track:GetLeft()
+            local tw = track:GetWidth()
+            if not left or not tw or tw <= 0 then return end
+            local relX = (curX / eff) - left
+            local pct = relX / tw
+            if pct < 0 then pct = 0 elseif pct > 1 then pct = 1 end
+            local scale = MIN_SCALE + pct * (MAX_SCALE - MIN_SCALE)
+            ApplyUserScale(scale)
+        end
+
+        track:SetScript("OnMouseDown", function(self, button)
+            if button == "LeftButton" then
+                isDragging = true
+                SetFromCursor()
+                self:SetScript("OnUpdate", function()
+                    if isDragging then SetFromCursor() end
+                end)
+            end
+        end)
+        track:SetScript("OnMouseUp", function(self, button)
+            if button == "LeftButton" then
+                isDragging = false
+                self:SetScript("OnUpdate", nil)
+            end
+        end)
+
+        local function OnWheel(self, delta)
+            local cur = (AuraUIDB and AuraUIDB.panelScale) or 1.0
+            ApplyUserScale(cur + delta * STEP)
+        end
+        scaleFrame:SetScript("OnMouseWheel", OnWheel)
+        track:SetScript("OnMouseWheel", OnWheel)
+
+        scaleFrame:SetScript("OnEnter", function(self)
+            AuraUI.ShowWidgetTooltip(self, AuraUI.L("Window Scale\nResizes the options window in 5% steps.\nShift + mouse wheel also adjusts scale."))
+        end)
+        scaleFrame:SetScript("OnLeave", function()
+            AuraUI.HideWidgetTooltip()
+        end)
+
+        scaleFrame:SetScript("OnShow", function()
+            local cur = (AuraUIDB and AuraUIDB.panelScale) or 1.0
+            UpdateVisuals(cur)
+        end)
+
+        AuraUI._RefreshWindowScaleSlider = function()
+            local cur = (AuraUIDB and AuraUIDB.panelScale) or 1.0
+            UpdateVisuals(cur)
+        end
     end
 
     -- Built on the first collapse. Every piece is a rect of art the panel already
@@ -12923,6 +13055,7 @@ do
         local baseScale = GetScreenWidth() / physW
         local targetScale = baseScale * (userScale or 1.0)
         if AuraUIDB then AuraUIDB.panelScale = userScale end
+        if AuraUI._RefreshWindowScaleSlider then AuraUI._RefreshWindowScaleSlider() end
         -- Recalculate PanelPP mult for the new scale
         if AuraUI.PanelPP then AuraUI.PanelPP.UpdateMult() end
         if isAnimating then

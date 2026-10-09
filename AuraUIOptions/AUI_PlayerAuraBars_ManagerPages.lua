@@ -2681,6 +2681,7 @@ local function ShowAddBarPopup(anchorBtn, kind, fontPath)
         popup:SetSize(POPUP_W, POPUP_PAD + LABEL_H + LBL_GAP + ROW_H + GAP + ROW_H + POPUP_PAD)
         popup:EnableMouse(true)
         popup:SetClampedToScreen(true)
+        popup:Hide()
 
         local bg = popup:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()

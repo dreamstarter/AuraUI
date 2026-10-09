@@ -451,6 +451,9 @@ local function LayoutFlyoutButtons()
     local ph = margin * 2 + rows * btnSize + (rows - 1) * FLYOUT_PADDING
     flyoutPanel:SetSize(pw, ph)
 
+    local mp = EBS.db and EBS.db.profile.minimap
+    local showBg = not mp or mp.btnBackgrounds ~= false
+
     for i, btn in ipairs(buttons) do
         if not flyoutSavedParents[btn] then
             local p1, rel, p2, ox, oy = btn:GetPoint(1)
@@ -508,14 +511,32 @@ local function LayoutFlyoutButtons()
             -- Foreign icon: no global SetTexCoord snap hook, so disable snap once here.
             if AuraUI.PP then AuraUI.PP.DisablePixelSnap(icon) end
         end
-        if not GetFFD(btn).flyoutRing then
-            local ring = btn:CreateTexture(nil, "OVERLAY", nil, 7)
-            ring:SetAtlas("AdventureMap-combatally-ring")
-            ring:SetPoint("TOPLEFT", btn, "TOPLEFT", -3, 3)
-            ring:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 3, -3)
-            GetFFD(btn).flyoutRing = ring
+
+        if not GetFFD(btn).flyoutBg then
+            local fbg = CreateFrame("Frame", nil, btn, "BackdropTemplate")
+            fbg:SetBackdrop({ bgFile = "Interface\\ChatFrame\\ChatFrameBackground" })
+            fbg:SetBackdropColor(0, 0, 0, 0.8)
+            fbg:SetAllPoints(btn)
+            GetFFD(btn).flyoutBg = fbg
         end
-        GetFFD(btn).flyoutRing:Show()
+        local fbg = GetFFD(btn).flyoutBg
+        fbg:SetFrameStrata(btn:GetFrameStrata())
+        fbg:SetFrameLevel(btn:GetFrameLevel() - 1)
+
+        if showBg then
+            fbg:Show()
+            if GetFFD(btn).flyoutRing then GetFFD(btn).flyoutRing:Hide() end
+        else
+            fbg:Hide()
+            if not GetFFD(btn).flyoutRing then
+                local ring = btn:CreateTexture(nil, "OVERLAY", nil, 7)
+                ring:SetAtlas("AdventureMap-combatally-ring")
+                ring:SetPoint("TOPLEFT", btn, "TOPLEFT", -3, 3)
+                ring:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", 3, -3)
+                GetFFD(btn).flyoutRing = ring
+            end
+            GetFFD(btn).flyoutRing:Show()
+        end
     end
 end
 
@@ -5524,6 +5545,9 @@ do
 
     local function SetMenuVisible(visible)
         if not menuFrame then return end
+        if visible and menuFrame.LayoutMenu and not InCombatLockdown() then
+            menuFrame.LayoutMenu()
+        end
         menuOpen = visible
         menuFrame:ClearAllPoints()
         if visible then
@@ -5558,20 +5582,17 @@ do
             end
         end)
 
-        local y = -PADDING
+        local menuEntries = {}
         for _, item in ipairs(menuItems) do
+            local entry = { item = item }
             if item.divider then
                 local div = menuFrame:CreateTexture(nil, "ARTWORK")
-                div:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 8, y - 4)
-                div:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -8, y - 4)
                 div:SetHeight(1)
                 div:SetColorTexture(0.3, 0.3, 0.3, 0.6)
-                y = y - DIVIDER_H
+                entry.frame = div
             elseif item.fn then
                 -- Plain button (no secure template needed)
                 local btn = CreateFrame("Button", nil, menuFrame)
-                btn:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, y)
-                btn:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, y)
                 btn:SetHeight(BUTTON_H)
 
                 local hl = btn:CreateTexture(nil, "HIGHLIGHT")
@@ -5591,15 +5612,12 @@ do
                     SetMenuVisible(false)
                     itemFn()
                 end)
-
-                y = y - BUTTON_H
+                entry.frame = btn
             else
                 -- Secure click passthrough to a Blizzard MicroButton
                 local microRef = item.microButton and _G[item.microButton]
                 local btnName = "AUI_MicroMenu_" .. item.text:gsub("%s", "")
                 local btn = CreateFrame("Button", btnName, menuFrame, "SecureActionButtonTemplate,SecureHandlerStateTemplate")
-                btn:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, y)
-                btn:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, y)
                 btn:SetHeight(BUTTON_H)
 
                 -- "/click <name>" macro transport: the 12.1 "click" secure action
@@ -5640,12 +5658,40 @@ do
                 label:SetText(AuraUI.L(item.text))
 
                 btn:HookScript("OnClick", function() C_Timer.After(0, function() SetMenuVisible(false) end) end)
-
-                y = y - BUTTON_H
+                entry.frame = btn
             end
+            menuEntries[#menuEntries + 1] = entry
         end
 
-        menuFrame:SetSize(MENU_WIDTH, -y + PADDING)
+        local function LayoutMenu()
+            local hideFriends = AuraUI.PadInUse and AuraUI.PadInUse()
+            local y = -PADDING
+            for _, entry in ipairs(menuEntries) do
+                local item = entry.item
+                local isFriends = item.microButton == "QuickJoinToastButton"
+                if isFriends and hideFriends then
+                    if entry.frame then entry.frame:Hide() end
+                else
+                    if entry.frame then
+                        entry.frame:Show()
+                        entry.frame:ClearAllPoints()
+                        if item.divider then
+                            entry.frame:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 8, y - 4)
+                            entry.frame:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -8, y - 4)
+                            y = y - DIVIDER_H
+                        else
+                            entry.frame:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, y)
+                            entry.frame:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -1, y)
+                            y = y - BUTTON_H
+                        end
+                    end
+                end
+            end
+            menuFrame:SetSize(MENU_WIDTH, -y + PADDING)
+        end
+        menuFrame.LayoutMenu = LayoutMenu
+        LayoutMenu()
+
         menuFrame:Show()
         SetMenuVisible(false)
     end

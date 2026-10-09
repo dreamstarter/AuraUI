@@ -413,13 +413,12 @@ function AuraUI.RepositionBarToMover(barKey)
     if not m then return end
     local bar = GetBarFrame(barKey)
     if not bar then return end
-    local mL, mT = m:GetLeft(), m:GetTop()
-    if not mL or not mT then return end
-    -- GetLeft/GetTop and SetPoint TOPLEFT vs UIParent TOPLEFT share one space;
-    -- Y offset from UIParent TOPLEFT is negative (top of screen = 0).
+    local mCX, mCY = m:GetCenter()
+    if not mCX or not mCY then return end
+    local uW, uH = UIParent:GetWidth(), UIParent:GetHeight()
     pcall(function()
         bar:ClearAllPoints()
-        bar:SetPoint("TOPLEFT", UIParent, "TOPLEFT", mL, mT - UIParent:GetHeight())
+        bar:SetPoint("CENTER", UIParent, "CENTER", mCX - uW * 0.5, mCY - uH * 0.5)
     end)
 end
 
@@ -617,12 +616,13 @@ AuraUI._ELEMENT_SETTINGS_MAP = {
     ["Bar10"]     = { module = "AuraUIActionBars",          page = "Bar Display",                  sectionName = "LAYOUT",  preSelectFn = SelectActionBar("Bar10"),     highlightText = "Icon Size" },
     ["StanceBar"] = { module = "AuraUIActionBars",          page = "Bar Display",                  sectionName = "LAYOUT",  preSelectFn = SelectActionBar("StanceBar"), highlightText = "Icon Size" },
     ["PetBar"]    = { module = "AuraUIActionBars",          page = "Bar Display",                  sectionName = "LAYOUT",  preSelectFn = SelectActionBar("PetBar"),    highlightText = "Icon Size" },
-    ["XPBar"]     = { module = "AuraUIActionBars",          page = "Bar Display",                  sectionName = "LAYOUT",  preSelectFn = SelectActionBar("XPBar"),     highlightText = "Icon Size" },
-    ["RepBar"]    = { module = "AuraUIActionBars",          page = "Bar Display",                  sectionName = "LAYOUT",  preSelectFn = SelectActionBar("RepBar"),    highlightText = "Icon Size" },
+    ["XPBar"]     = { module = "AuraUIActionBars",          page = "Menu, Bags & XP Bars",         sectionName = "XP/REP BAR STYLE" },
+    ["RepBar"]    = { module = "AuraUIActionBars",          page = "Menu, Bags & XP Bars",         sectionName = "XP/REP BAR STYLE" },
+    ["HouseFavorBar"] = { module = "AuraUIActionBars",      page = "Menu, Bags & XP Bars",         sectionName = "XP/REP BAR STYLE" },
 
     -- Action Bars -- visibility-only (dropdown pre-selected, scroll to top)
-    ["MicroBar"] = { module = "AuraUIActionBars",          page = "Bar Display",                  sectionName = "GENERAL", preSelectFn = SelectActionBar("MicroBagBars") },
-    ["BagBar"]   = { module = "AuraUIActionBars",          page = "Bar Display",                  sectionName = "GENERAL", preSelectFn = SelectActionBar("MicroBagBars") },
+    ["MicroBar"] = { module = "AuraUIActionBars",          page = "Menu, Bags & XP Bars",         sectionName = "MICRO MENU & BAGS" },
+    ["BagBar"]   = { module = "AuraUIActionBars",          page = "Menu, Bags & XP Bars",         sectionName = "MICRO MENU & BAGS" },
 
     -- Aura Buff Reminders
     ["EABR_Reminders"] = { module = "AuraUIAuraBuffReminders", page = "Auras, Buffs & Consumables", sectionName = "DISPLAY" },
@@ -11872,11 +11872,11 @@ local function SnapshotPositions()
                     if fr then
                         local nPts = fr:GetNumPoints()
                         if nPts and nPts > 0 then
-                            local point, _, relPoint, x, y = fr:GetPoint(1)
+                            local point, relTo, relPoint, x, y = fr:GetPoint(1)
                             if point then
                                 -- relPoint may be a frame object here (not a string) if anchored to
                                 -- a parent frame rather than UIParent; mark this snapshot so RevertPositions skips writing it to SavedVariables.
-                                snapshotPositions[key] = { point = point, relPoint = relPoint, x = x, y = y, _fromLiveFrame = true }
+                                snapshotPositions[key] = { point = point, relTo = relTo, relPoint = relPoint, x = x, y = y, _fromLiveFrame = true }
                             end
                         end
                     end
@@ -12353,6 +12353,11 @@ local function RevertPositions()
                             bar:SetPoint(snap.point, UIParent, snap.relPoint, snap.x, snap.y)
                         end)
                     end
+                elseif snap and snap._fromLiveFrame then
+                    pcall(function()
+                        bar:ClearAllPoints()
+                        bar:SetPoint(snap.point, snap.relTo or UIParent, snap.relPoint, snap.x, snap.y)
+                    end)
                 elseif bar.UpdateGridLayout then
                     pcall(bar.UpdateGridLayout, bar)
                 end
